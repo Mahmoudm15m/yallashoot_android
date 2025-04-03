@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiData {
-  final String baseUrl = "https://api.fastmovies.online/api/v1";
+  final String baseUrl = "https://api.syria-live.fun/api/v1";
 
   Future<Map<String, dynamic>> fetchData(String endpoint) async {
     try {

@@ -20,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   DateTime? _dataFetchTime;
   late AnimationController _pulseController;
 
-
   DateTime selectedDate = DateTime.now();
 
   Future<Map<String, dynamic>> fetchMatchesForDate(DateTime date) async {
@@ -61,10 +60,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         highlightColor: Colors.grey[500]!,
         child: Container(
           width: double.infinity,
-          height: 100,
+          height: 80, // قللت الارتفاع هنا
           decoration: BoxDecoration(
             color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8), // قللت نصف القطر
           ),
         ),
       ),
@@ -73,25 +72,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget buildDateSelector() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: Colors.grey.shade400),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today, color: Colors.blue),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
+                  const SizedBox(width: 6),
                   Text(
                     DateFormat('dd MMM yyyy').format(selectedDate),
                     style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontFamily: 'Cairo',
                         color: Colors.black,
                         fontWeight: FontWeight.w600),
@@ -100,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           ElevatedButton.icon(
             onPressed: () async {
               DateTime? picked = await showDatePicker(
@@ -117,10 +116,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 });
               }
             },
-            icon: const Icon(Icons.edit),
-            label: const Text("تغيير"),
+            icon: const Icon(Icons.edit, size: 18),
+            label: const Text("تغيير", style: TextStyle(fontSize: 14)),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
         ],
@@ -160,14 +159,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       progressValue = (initialElapsed / 90).clamp(0.0, 1.0);
     }
 
-    const textStyle = TextStyle(fontSize: 16, fontFamily: 'Cairo');
-    const smallTextStyle =
-    TextStyle(fontSize: 14, fontFamily: 'Cairo', fontWeight: FontWeight.bold);
+    const textStyle = TextStyle(fontSize: 14, fontFamily: 'Cairo');
+    const smallTextStyle = TextStyle(fontSize: 12, fontFamily: 'Cairo', fontWeight: FontWeight.bold);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: IconButton(
         padding: EdgeInsets.zero,
         onPressed: () {
@@ -176,11 +174,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }));
         },
         icon: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Expanded(
@@ -189,10 +187,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         if (teams['home']['logo'] != null)
                           Image.network(
                             teams['home']['logo'],
-                            width: 40,
-                            height: 40,
+                            width: 30, // تصغير حجم اللوجو
+                            height: 30,
                           ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           teams['home']['name'] ?? '',
                           style: textStyle,
@@ -203,21 +201,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   SizedBox(
-                    width: 60,
+                    width: 50,
                     child: Center(
                       child: isLive
                           ? Stack(
                         alignment: Alignment.center,
                         children: [
                           SizedBox(
-                            width: 50,
-                            height: 50,
+                            width: 40,
+                            height: 40,
                             child: CircularProgressIndicator(
                               value: progressValue,
-                              strokeWidth: 6,
+                              strokeWidth: 4,
                               backgroundColor: Colors.grey[300],
-                              valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
                             ),
                           ),
                           Text(
@@ -225,8 +222,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             style: smallTextStyle.copyWith(color: Colors.lightGreen),
                           ),
                           Positioned(
-                            bottom: 5,
-                            right: 20,
+                            bottom: 4,
+                            right: 16,
                             child: AnimatedBuilder(
                               animation: _pulseController,
                               builder: (context, child) {
@@ -237,8 +234,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 );
                               },
                               child: Container(
-                                width: 8,
-                                height: 8,
+                                width: 6,
+                                height: 6,
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: Colors.red,
@@ -270,10 +267,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         if (teams['away']['logo'] != null)
                           Image.network(
                             teams['away']['logo'],
-                            width: 40,
-                            height: 40,
+                            width: 30,
+                            height: 30,
                           ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           teams['away']['name'] ?? '',
                           style: textStyle,
@@ -285,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               if (score['home'] != null && score['away'] != null)
                 Center(
                   child: Text(
@@ -322,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       (index) => Column(
                     children: [
                       buildLoadingScreen(),
-                      if (index < 4) const SizedBox(height: 10),
+                      if (index < 4) const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -334,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               return const Center(
                 child: Text(
                   'لا توجد بيانات متاحة.',
-                  style: TextStyle(color: Colors.red, fontSize: 18),
+                  style: TextStyle(color: Colors.red, fontSize: 16),
                 ),
               );
             }
@@ -355,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               var league = matchList.first['league'];
               leagueSections.add(
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -367,18 +364,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         icon: Text(
                           league['name'] ?? '',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontFamily: 'Cairo',
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       if (league['logo'] != null)
                         Image.network(
                           league['logo'],
-                          width: 30,
-                          height: 30,
+                          width: 24,
+                          height: 24,
                         ),
                     ],
                   ),

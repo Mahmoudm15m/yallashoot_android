@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sticky_headers/sticky_headers.dart';
 import 'package:yallashoot/screens/match_details.dart';
 import '../api/main_api.dart';
+import '../functions/base_functions.dart';
+import 'news_details_screen.dart';
 
 class LeagueScreen extends StatefulWidget {
   final String link;
@@ -56,7 +58,6 @@ class _LeagueScreenState extends State<LeagueScreen> {
     futureLeagueRanks = fetchLeagueRanks();
   }
 
-  // تجميع المباريات حسب الجولة
   Map<String, List<dynamic>> groupGamesByRound(List<dynamic> games) {
     final Map<String, List<dynamic>> grouped = {};
     for (var game in games) {
@@ -70,7 +71,6 @@ class _LeagueScreenState extends State<LeagueScreen> {
     return grouped;
   }
 
-  // دالة لبناء قسم الجولات باستخدام StickyHeader
   Widget buildStickyGamesSection(String sectionTitle, Map<String, List<dynamic>> groupedGames) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,8 +103,8 @@ class _LeagueScreenState extends State<LeagueScreen> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: Text('${game['home_team']} vs ${game['away_team']}'),
-                    subtitle: Text('${game['date']} - ${game['match_time']}'),
+                    title: Center(child: Text('${game['home_team']} vs ${game['away_team']}')),
+                    subtitle: Center(child: Text('${game['date']} - ${game['match_time'] ?? ""}')),
                     leading: Image.network(
                       game['home_image'],
                       width: 40,
@@ -135,7 +135,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       width: width,
       padding: const EdgeInsets.all(8.0),
       alignment: Alignment.center,
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold , color: Colors.black)),
     );
   }
 
@@ -212,7 +212,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
           // الصف الثابت (رؤوس الأعمدة)
           Container(
             height: 50.0,
-            color: Colors.grey[300],
+            color: Colors.blueGrey,
             child: Row(
               children: [
                 _buildHeaderCell('المركز', width: 60),
@@ -349,7 +349,11 @@ class _LeagueScreenState extends State<LeagueScreen> {
                             height: 40,
                           ),
                           onTap: () {
-                            // يمكن فتح الرابط الخاص بالخبر: newsItem['link']
+
+                            Navigator.push(context, MaterialPageRoute(builder: (context){
+                              return NewsDetailsScreen(id: extractIdFromUrl(newsItem['link']).toString(),
+                                  img: newsItem["image"].toString().replaceAll("/150/", "/820/"));
+                            }));
                           },
                         ),
                       );

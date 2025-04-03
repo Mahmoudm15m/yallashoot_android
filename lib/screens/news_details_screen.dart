@@ -57,34 +57,40 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
             if (newsDetails == null) {
               return const Center(child: Text('لا توجد بيانات للخبر'));
             }
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // عرض الصورة الرئيسية (الرابط الخارجي)
-                  Center(
-                    child: Image.network(
-                      widget.img,
-                      errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 100),
+            return Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Image.network(
+                        widget.img,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 100),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    newsDetails['title'] ?? 'بدون عنوان',
-                    style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  // عرض محتوى الخبر باستخدام Html widget مع تخصيص عرض الصور
-                  Html(
-                    data: (newsDetails['full_news'] != null &&
-                        (newsDetails['full_news'] as String).isNotEmpty)
-                        ? newsDetails['full_news']
-                        : (newsDetails['news_desc'] ?? 'لا يوجد وصف للخبر'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      newsDetails['title'] ?? 'بدون عنوان',
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Html(
+                      data: (newsDetails['full_news'] != null && (newsDetails['full_news'] as String).isNotEmpty)
+                          ? newsDetails['full_news']
+                          : (newsDetails['news_desc'] ?? 'لا يوجد وصف للخبر'),
+                      style: {
+                        "img": Style(
+                          width: Width(MediaQuery.of(context).size.width * 0.95),
+                        ),
+                      },
+                    )
+                  ],
+                ),
               ),
             );
           }
