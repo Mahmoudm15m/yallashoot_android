@@ -225,7 +225,6 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
   }
   
   Widget buildMatchInfoTab(Map<String, dynamic> info) {
-    // دالة مساعدة لبناء بطاقة معلومات واحدة
     Widget infoCard({required IconData icon, required String label, required String value}) {
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -248,7 +247,7 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
       );
     }
 
-    // بطاقة تعرض قائمة القنوات مع فاصل بين كل قناة
+
     Widget channelsCard() {
       final channels = info['channels'];
       if (channels == null || channels.isEmpty) return Container();
@@ -308,8 +307,6 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
         ),
       );
     }
-
-    // بطاقة تعرض قائمة الحكام مع فاصل بين كل حكم
     Widget refereesCard() {
       final referees = info['referees'];
       if (referees == null || referees.isEmpty) return Container();
@@ -1566,18 +1563,15 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
             child: Scaffold(
               appBar: AppBar(
                 title: const Text("تفاصيل المباراة"),
-                // إزالة التبويبات من AppBar
               ),
               body: Column(
                 children: [
                   buildTeamHeader(teams, matchInfo),
                   buildMatchStatusSection(matchInfo),
-                  // استخدام Padding بدلاً من Container مع إزالة الخلفية واللون الأزرق
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: TabBar(
                       isScrollable: true,
-                      // استخدام ألوان تعتمد على ثيم التطبيق الحالي
                       labelColor: Theme.of(context).colorScheme.onBackground,
                       unselectedLabelColor: Theme.of(context).disabledColor,
                       indicatorColor: Theme.of(context).colorScheme.primary,
@@ -1594,7 +1588,7 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
                       ],
                     ),
                   ),
-                  const Divider(),
+
                   Expanded(
                     child: TabBarView(
                       children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:yallashoot/screens/home_screen.dart';
+import 'package:yallashoot/screens/lives_screen.dart';
 import 'package:yallashoot/screens/news_screen.dart';
 import 'package:yallashoot/screens/ranks_screen.dart';
 import 'package:yallashoot/screens/transfares.dart';
@@ -104,6 +105,25 @@ class _MainScreenState extends State<MainScreen> {
               onChanged: widget.toggleDarkMode,
               secondary: const Icon(Icons.dark_mode),
             ),
+            IconButton(
+                onPressed: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context){
+                    return LivesScreen();
+                  })) ;
+                },
+                icon: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Icon(Icons.live_tv),
+                    ),
+                    SizedBox(width: 20,),
+                    Text("البث المتاح" , style: TextStyle(
+                      fontSize: 18
+                    ),),
+                  ],
+                )
+            )
           ],
         ),
       ),

@@ -176,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         icon: Padding(
           padding: const EdgeInsets.all(8),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 4),
               Row(
@@ -204,59 +205,98 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     width: 50,
                     child: Center(
                       child: isLive
-                          ? Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(
-                              value: progressValue,
-                              strokeWidth: 4,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
-                            ),
-                          ),
-                          Text(
-                            "$displayedMinutes:${displayedSeconds.toString().padLeft(2, '0')}",
-                            style: smallTextStyle.copyWith(color: Colors.lightGreen),
-                          ),
-                          Positioned(
-                            bottom: 4,
-                            right: 16,
-                            child: AnimatedBuilder(
-                              animation: _pulseController,
-                              builder: (context, child) {
-                                double scale = 1.0 + _pulseController.value * 0.5;
-                                return Transform.scale(
-                                  scale: scale,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.red,
+                          ? Column(
+                            children: [
+                              Stack(
+                                                      alignment: Alignment.center,
+                                                      children: [
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  value: progressValue,
+                                  strokeWidth: 4,
+                                  backgroundColor: Colors.grey[300],
+                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      )
+                              Text(
+                                "$displayedMinutes:${displayedSeconds.toString().padLeft(2, '0')}",
+                                style: smallTextStyle.copyWith(color: Colors.lightGreen),
+                              ),
+                              Positioned(
+                                bottom: 4,
+                                right: 16,
+                                child: AnimatedBuilder(
+                                  animation: _pulseController,
+                                  builder: (context, child) {
+                                    double scale = 1.0 + _pulseController.value * 0.5;
+                                    return Transform.scale(
+                                      scale: scale,
+                                      child: child,
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                                                      ],
+                                                    ),
+                              if (score['home'] != null && score['away'] != null)
+                                Column(
+                                  children: [
+                                    SizedBox(height: 5,),
+                                    Text(
+                                      "${score['home']} - ${score['away']}",
+                                      style: smallTextStyle,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          )
                           : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            formatTime(fixture['time'] ?? ''),
-                            style: textStyle,
-                            textAlign: TextAlign.center,
-                          ),
-                          Text(
-                            fixture['status']["long"] ?? '',
-                            style: textStyle,
-                            textAlign: TextAlign.center,
-                          ),
+                          (fixture['time'] != null) ? Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey,
+                              borderRadius: BorderRadius.circular(20)
+                            ),
+                            padding: EdgeInsets.only(right: 4 , left: 4),
+                            child: Text(
+                              formatTime(fixture['time'] ?? ''),
+                              style: textStyle,
+                              textAlign: TextAlign.center,
+                            ),
+                          ) : SizedBox(),
+                          (fixture['status']["long"] != null && !fixture['status']["long"].toString().contains("إنتهت المباراة"))  ? Column(
+                            children: [
+                              SizedBox(height: 4,),
+                              Text(
+                                fixture['status']["long"] ?? '',
+                                style: TextStyle(
+                                  fontSize: 11
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ) : SizedBox(),
+                          if (score['home'] != null && score['away'] != null)
+                            Center(
+                              child: Text(
+                                "${score['home']} - ${score['away']}",
+                                style: smallTextStyle,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -282,14 +322,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              if (score['home'] != null && score['away'] != null)
-                Center(
-                  child: Text(
-                    "${score['home']} - ${score['away']}",
-                    style: smallTextStyle,
-                  ),
-                ),
             ],
           ),
         ),
@@ -353,31 +385,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               leagueSections.add(
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          print(leagueId);
-                        },
-                        icon: Text(
-                          league['name'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Cairo',
-                            fontWeight: FontWeight.bold,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.grey,
+                        width: 0.2
+                      ),
+                      borderRadius: BorderRadius.circular(5)
+                    ),
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            print(leagueId);
+                          },
+                          icon: Text(
+                            league['name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      if (league['logo'] != null)
-                        Image.network(
-                          league['logo'],
-                          width: 24,
-                          height: 24,
-                        ),
-                    ],
+                        const SizedBox(width: 6),
+                        if (league['logo'] != null)
+                          Image.network(
+                            league['logo'],
+                            width: 19,
+                            height: 19,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               );

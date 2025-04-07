@@ -30,6 +30,9 @@ class ApiData {
   Future<Map<String, dynamic>> getNewsData() async {
     return await fetchData("news");
   }
+  Future<Map<String, dynamic>> getLivesData() async {
+    return await fetchData("lives");
+  }
   Future<Map<String, dynamic>> getMatchesData(String date) async {
     return await fetchData("matches?date=$date");
   }
