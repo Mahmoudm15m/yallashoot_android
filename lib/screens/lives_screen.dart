@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../api/main_api.dart';
@@ -71,8 +70,43 @@ class _LivesScreenState extends State<LivesScreen> {
                     elevation: 3,
                     child: InkWell(
                       onTap: () {
-                        // تأكد من استخدام الرابط المناسب للبث
-                        print(match["stream_link"]);
+                        showModalBottomSheet(
+                          context: context,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (BuildContext context) {
+                            Map<String, dynamic> streamLinks = match["stream_links"];
+                            List<String> qualities = streamLinks.keys.toList();
+
+                            return Container(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'اختر جودة البث',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: qualities.length,
+                                    itemBuilder: (context, index) {
+                                      String quality = qualities[index];
+                                      return ListTile(
+                                        title: Text(quality),
+                                        onTap: () {
+                                          print(streamLinks[quality]);
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
