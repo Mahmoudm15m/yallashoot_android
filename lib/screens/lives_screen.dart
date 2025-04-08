@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yallashoot/screens/video_player_screen.dart';
 
 import '../api/main_api.dart';
 
@@ -70,43 +71,12 @@ class _LivesScreenState extends State<LivesScreen> {
                     elevation: 3,
                     child: InkWell(
                       onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                          ),
-                          builder: (BuildContext context) {
-                            Map<String, dynamic> streamLinks = match["stream_links"];
-                            List<String> qualities = streamLinks.keys.toList();
-
-                            return Container(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'اختر جودة البث',
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: qualities.length,
-                                    itemBuilder: (context, index) {
-                                      String quality = qualities[index];
-                                      return ListTile(
-                                        title: Text(quality),
-                                        onTap: () {
-                                          print(streamLinks[quality]);
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
+                        // استخراج جميع روابط البث المتاحة
+                        Map<String, dynamic> streamLinks = match["stream_links"];
+                        // انتقال مباشر لصفحة المشغل مع إرسال روابط الجودة المتاحة
+                        Navigator.push(context, MaterialPageRoute(builder: (context) {
+                          return VideoPlayerScreen(streamLinks: streamLinks);
+                        }));
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
@@ -132,7 +102,7 @@ class _LivesScreenState extends State<LivesScreen> {
                             const Expanded(
                               child: Center(
                                 child: Text(
-                                  "اضغط لمشاهده البث",
+                                  "اضغط لمشاهدة البث",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 16),
                                 ),
