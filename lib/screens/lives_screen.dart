@@ -71,9 +71,7 @@ class _LivesScreenState extends State<LivesScreen> {
                     elevation: 3,
                     child: InkWell(
                       onTap: () {
-                        // استخراج جميع روابط البث المتاحة
                         Map<String, dynamic> streamLinks = match["stream_links"];
-                        // انتقال مباشر لصفحة المشغل مع إرسال روابط الجودة المتاحة
                         Navigator.push(context, MaterialPageRoute(builder: (context) {
                           return VideoPlayerScreen(streamLinks: streamLinks);
                         }));
@@ -83,7 +81,6 @@ class _LivesScreenState extends State<LivesScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // الفريق المضيف
                             Column(
                               children: [
                                 Image.network(

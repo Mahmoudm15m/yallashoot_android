@@ -20,12 +20,33 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    // اختيار أول جودة من الخريطة افتراضياً
     currentQuality = widget.streamLinks.keys.first;
+    _setupPlayer(currentQuality);
+  }
+
+  void _setupPlayer(String quality) {
+    String url = widget.streamLinks[quality];
+
+    // تحديد نوع الفيديو تلقائي حسب الامتداد
+    BetterPlayerVideoFormat? format;
+    if (url.contains(".m3u8")) {
+      format = BetterPlayerVideoFormat.hls;
+    } else if (url.contains(".mp4")) {
+      format = BetterPlayerVideoFormat.other;
+    } else {
+      format = null; // ExoPlayer يحاول يتعرف لوحده
+    }
+
     BetterPlayerDataSource dataSource = BetterPlayerDataSource(
       BetterPlayerDataSourceType.network,
-      widget.streamLinks[currentQuality],
+      url,
+      videoFormat: format,
+      headers: {
+        "Referer": "", // أو fake لو لزم الأمر
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Mobile Safari/537.36"
+      },
     );
+
     _betterPlayerController = BetterPlayerController(
       BetterPlayerConfiguration(
         aspectRatio: 16 / 9,
@@ -42,19 +63,34 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.dispose();
   }
 
-  // دالة لتغيير الجودة
   void _changeQuality(String quality) {
     setState(() {
       currentQuality = quality;
     });
+
+    String url = widget.streamLinks[quality];
+    BetterPlayerVideoFormat? format;
+    if (url.contains(".m3u8")) {
+      format = BetterPlayerVideoFormat.hls;
+    } else if (url.contains(".mp4")) {
+      format = BetterPlayerVideoFormat.other;
+    } else {
+      format = null;
+    }
+
     BetterPlayerDataSource newDataSource = BetterPlayerDataSource(
       BetterPlayerDataSourceType.network,
-      widget.streamLinks[quality],
+      url,
+      videoFormat: format,
+      headers: {
+        "Referer": "",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Mobile Safari/537.36"
+      },
     );
+
     _betterPlayerController.setupDataSource(newDataSource);
   }
 
-  // عرض القائمة الخاصة بتغيير الجودة
   void _showQualityDialog() {
     showDialog(
       context: context,
