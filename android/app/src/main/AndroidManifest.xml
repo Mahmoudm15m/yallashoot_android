@@ -18,6 +18,11 @@
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
 
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9181001319721306~3001054501" />
+
         <!-- Activity الرئيسية -->
         <activity
             android:name=".MainActivity"
@@ -68,6 +73,5 @@
             <action android:name="android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION" />
         </intent>
     </queries>
-
 
 </manifest>

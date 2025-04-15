@@ -38,7 +38,8 @@ dependencies:
   url_launcher:
   sticky_headers:
   flutter_html: ^3.0.0
-  better_player_plus: ^1.0.8
+  unity_ads_plugin: ^0.3.24
+  google_mobile_ads: ^6.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

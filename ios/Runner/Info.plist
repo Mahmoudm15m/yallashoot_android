@@ -56,5 +56,9 @@
 	<!-- ✅ تصريح الشبكة المحلية لتفادي خطأ VMServicePublisher -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>We need access to your local network to support debugging and local connectivity.</string>
+
+	<!-- ✅ AdMob App ID -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-9181001319721306~5136859728</string>
 </dict>
 </plist>
