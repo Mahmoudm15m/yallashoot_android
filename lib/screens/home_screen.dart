@@ -56,11 +56,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget buildLoadingScreen() {
     return Center(
       child: Shimmer.fromColors(
-        baseColor: Colors.grey[500]!,
+        baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[500]!,
         child: Container(
           width: double.infinity,
-          height: 80, // قللت الارتفاع هنا
+          height: 80,
           decoration: BoxDecoration(
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(8), // قللت نصف القطر

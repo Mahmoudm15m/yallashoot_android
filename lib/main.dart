@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:yallashoot/screens/home_screen.dart';
 import 'package:yallashoot/screens/lives_screen.dart';
 import 'package:yallashoot/screens/news_screen.dart';
 import 'package:yallashoot/screens/ranks_screen.dart';
 import 'package:yallashoot/screens/transfares.dart';
+import 'ad_helper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('en', '');
+  // في حال كنت تستخدم Google Mobile Ads تأكد من تهيئة المكتبة:
+  MobileAds.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -68,6 +72,30 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  BannerAd? _bannerAd;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerAd = AdHelper.loadBannerAd(
+      onAdLoaded: (ad) {
+        setState(() {
+          _bannerAd = ad as BannerAd;
+        });
+      },
+      onAdFailedToLoad: (ad, error) {
+        ad.dispose();
+        print('BannerAd failed to load: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
@@ -81,6 +109,12 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // دالة لحساب الارتفاع الكلي للجزء السفلي
+  double _bottomBarHeight() {
+    double adHeight = _bannerAd != null ? _bannerAd!.size.height.toDouble() : 0;
+    return adHeight + kBottomNavigationBarHeight;
   }
 
   @override
@@ -106,55 +140,70 @@ class _MainScreenState extends State<MainScreen> {
               secondary: const Icon(Icons.dark_mode),
             ),
             IconButton(
-                onPressed: (){
-                  Navigator.push(context, MaterialPageRoute(builder: (context){
-                    return LivesScreen();
-                  })) ;
-                },
-                icon: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: Icon(Icons.live_tv),
-                    ),
-                    SizedBox(width: 20,),
-                    Text("البث المتاح" , style: TextStyle(
-                      fontSize: 18
-                    ),),
-                  ],
-                )
-            )
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return LivesScreen();
+                }));
+              },
+              icon: Row(
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.only(left: 10),
+                    child: Icon(Icons.live_tv),
+                  ),
+                  SizedBox(width: 20),
+                  Text(
+                    "البث المتاح",
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
       body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black, // لون العنصر المحدد بناءً على الثيم
-        unselectedItemColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey[400]
-            : Colors.grey[800], // لون العناصر غير المحددة بناءً على الثيم
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'الرئيسية',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard),
-            label: 'الترتيب',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.newspaper),
-            label: 'الأخبار',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.compare_arrows),
-            label: 'الانتقالات',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        height: _bottomBarHeight(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (_bannerAd != null)
+              SizedBox(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              selectedItemColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
+              unselectedItemColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[400]
+                  : Colors.grey[800],
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'الرئيسية',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.leaderboard),
+                  label: 'الترتيب',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.newspaper),
+                  label: 'الأخبار',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.compare_arrows),
+                  label: 'الانتقالات',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

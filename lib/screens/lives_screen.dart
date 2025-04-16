@@ -6,11 +6,42 @@ import '../api/main_api.dart';
 import '../unity_ads_helper.dart';
 import '../ad_helper.dart';
 
-void openExternalVideoPlayer(Map<String, dynamic> streamLinks) async {
-  String json = jsonEncode(streamLinks);
-  String encoded = base64Url.encode(utf8.encode(json));
-  String url = 'uspl://open.app?data=$encoded';
-  await launchUrl(Uri.parse(url));
+void openExternalVideoPlayer(BuildContext context, Map<String, dynamic> streamLinks) async {
+  try {
+    String json = jsonEncode(streamLinks);
+    String encoded = base64Url.encode(utf8.encode(json));
+    String url = 'uspl://open.app?data=$encoded';
+
+    await launchUrl(Uri.parse(url));
+  } catch (e) {
+    _showInstallDialog(context);
+  }
+}
+
+void _showInstallDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('تعذر فتح المشغل'),
+        content: Text('يرجى تحميل المشغل لتشغيل الفيديو.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              launchUrl(Uri.parse('https://example.com/app-download')); // غير الرابط هنا
+            },
+            child: Text('تحميل المشغل'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class LivesScreen extends StatefulWidget {
@@ -41,7 +72,6 @@ class _LivesScreenState extends State<LivesScreen> {
     AdManager.initializeAds(context);
     futureResults = fetchLives();
 
-    // تحميل البانر
     _bannerAd = AdHelper.loadBannerAd(
       onAdLoaded: (ad) {
         setState(() {
@@ -108,7 +138,7 @@ class _LivesScreenState extends State<LivesScreen> {
                             onTap: () async {
                               Map<String, dynamic> streamLinks = match["stream_links"];
                               await AdManager.showInterstitialAd(context);
-                              openExternalVideoPlayer(streamLinks);
+                              openExternalVideoPlayer(context , streamLinks);
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(12.0),
