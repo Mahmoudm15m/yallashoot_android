@@ -34,7 +34,7 @@ void _showInstallDialog(BuildContext context) {
           ),
           TextButton(
             onPressed: () {
-              launchUrl(Uri.parse('https://example.com/app-download')); // غير الرابط هنا
+              launchUrl(Uri.parse('https://syria-live.fun/'));
             },
             child: Text('تحميل المشغل'),
           ),

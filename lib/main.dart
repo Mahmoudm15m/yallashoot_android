@@ -111,7 +111,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // دالة لحساب الارتفاع الكلي للجزء السفلي
+
   double _bottomBarHeight() {
     double adHeight = _bannerAd != null ? _bannerAd!.size.height.toDouble() : 0;
     return adHeight + kBottomNavigationBarHeight;

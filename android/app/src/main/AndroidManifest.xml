@@ -13,7 +13,7 @@
 
     <application
         android:requestLegacyExternalStorage="true"
-        android:label="Syria Live"
+        android:label="سوريا لايف"
         android:name="${applicationName}"
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
