@@ -3,13 +3,6 @@
 
     <!-- الأذونات المطلوبة -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-feature android:name="android.software.drm" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.POST_NOTIFICTION"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
     <application
         android:requestLegacyExternalStorage="true"
@@ -68,10 +61,5 @@
         </intent>
     </queries>
 
-    <queries>
-        <intent>
-            <action android:name="android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION" />
-        </intent>
-    </queries>
 
 </manifest>
