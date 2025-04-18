@@ -30,7 +30,7 @@ void _showInstallDialog(BuildContext context) {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('إلغاء'),
+            child: Text(' إلغاء'),
           ),
           TextButton(
             onPressed: () {
