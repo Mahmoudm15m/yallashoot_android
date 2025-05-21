@@ -7,6 +7,141 @@ import '../functions/base_functions.dart';
 import 'news_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+class _EventCard extends StatelessWidget {
+  final String time, title, videoUrl, playerName, assistName;
+  final Icon icon;
+  final Color bgColor;
+  final bool hasVideo, isSub;
+
+  const _EventCard({
+    required this.time,
+    required this.title,
+    required this.icon,
+    required this.bgColor,
+    required this.videoUrl,
+    required this.hasVideo,
+    required this.isSub,
+    required this.playerName,
+    required this.assistName,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: hasVideo
+          ? () => launchUrl(Uri.parse(videoUrl),
+          mode: LaunchMode.externalApplication)
+          : null,
+      child: Container(
+        width: 180,
+        margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /* الصف العلوي */
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(time,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+                const SizedBox(width: 6),
+                icon,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontFamily: 'Cairo'),
+                  ),
+                ),
+                if (hasVideo)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 4.0),
+                    child: Icon(Icons.play_circle_fill,
+                        size: 18, color: Colors.blue),
+                  ),
+              ],
+            ),
+
+            /* تفاصيل التبديل أو التمريرة الحاسمة */
+            if (isSub) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.logout, size: 16, color: Colors.red),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text("خروج: ${playerName.isNotEmpty ? playerName : 'غير محدد'}",
+                        style: const TextStyle(fontFamily: 'Cairo'),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.login, size: 16, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text("دخول: ${assistName.isNotEmpty ? assistName : 'غير محدد'}",
+                        style: const TextStyle(fontFamily: 'Cairo'),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            ] else if (assistName.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.assistant_rounded,
+                      size: 16, color: Colors.purple),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text("تمريرة حاسمة: $assistName",
+                        style: const TextStyle(fontFamily: 'Cairo'),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DotOnLine extends StatelessWidget {
+  const _DotOnLine({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(5),
+      ),
+    );
+  }
+}
+
 class MatchDetails extends StatefulWidget {
   final String id;
   const MatchDetails({required this.id, Key? key}) : super(key: key);
@@ -223,7 +358,7 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
       ),
     );
   }
-  
+
   Widget buildMatchInfoTab(Map<String, dynamic> info) {
     Widget infoCard({required IconData icon, required String label, required String value}) {
       return Card(
@@ -533,235 +668,186 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
           return Center(child: buildLoadingScreen());
         } else if (snapshot.hasError || !snapshot.hasData) {
           return Center(
-            child: Text(
-              "لا توجد احداث حاليا.",
-              style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-            ),
+            child: Text("لا توجد احداث حاليا.",
+                style: TextStyle(fontSize: 16, fontFamily: 'Cairo')),
           );
         }
 
-        final data = snapshot.data ?? {};
-        final matchData = data["events"]?["data"] as Map<String, dynamic>? ?? {};
+        /*───────────────  البيانات  ───────────────*/
+        final data       = snapshot.data ?? {};
+        final matchData  = data["events"]?["data"] as Map<String, dynamic>? ?? {};
         final eventsList = matchData["events"] as List<dynamic>? ?? [];
-        final homeTeam = matchData["home_team"] as Map<String, dynamic>? ?? {};
-        final awayTeam = matchData["away_team"] as Map<String, dynamic>? ?? {};
+        final homeTeam   = matchData["home_team"] as Map<String, dynamic>? ?? {};
+        final awayTeam   = matchData["away_team"] as Map<String, dynamic>? ?? {};
 
-        String getTeamName(int teamId) {
-          if (teamId == homeTeam["row_id"]) {
-            return homeTeam["title"];
-          } else if (teamId == awayTeam["row_id"]) {
-            return awayTeam["title"];
-          } else {
-            return "نظام";
-          }
-        }
+        /*───────────────  دوال مساعدة  ───────────────*/
+        String getTeamName(int id) =>
+            id == homeTeam["row_id"] ? homeTeam["title"]
+                : id == awayTeam["row_id"] ? awayTeam["title"]
+                : "نظام";
 
         String getEventTypeDescription(int type, int status) {
           switch (type) {
-            case 1:
-              return "⚽ هدف";
-            case 2:
-              return "🟨 بطاقة صفراء";
-            case 3:
-              return status == 6 ? "🟥 بطاقة حمراء" : "🟨🟨 بطاقة صفراء ثانية";
-            case 4:
-              return "🚫 هدف في مرماه";
-            case 5:
-              return "✅ ضربة جزاء ناجحة";
-            case 6:
-              return "❌ ضربة جزاء ضائعة";
-            case 7:
-              return "⛔ هدف ملغي";
-            case 8:
-              return "🔄 تبديل";
-            case 22:
-              return "🎯 في العارضة";
-            case 100:
-              return "⏱ توقف/وقت إضافي";
-            default:
-              return "📌 حدث";
+            case 1:  return "⚽ هدف";
+            case 2:  return "🟨 بطاقة صفراء";
+            case 3:  return status == 6 ? "🟥 بطاقة حمراء" : "🟨🟨 بطاقة صفراء ثانية";
+            case 4:  return "🚫 هدف في مرماه";
+            case 5:  return "✅ ضربة جزاء ناجحة";
+            case 6:  return "❌ ضربة جزاء ضائعة";
+            case 7:  return "⛔ هدف ملغي";
+            case 8:  return "🔄 تبديل";
+            case 22: return "🎯 في العارضة";
+            case 100:return "⏱ وقت إضافي/توقف";
+            default: return "📌 حدث";
           }
         }
 
-        Icon getEventIcon(int type, String teamName , int status) {
+        String getSystemMessage(int minute, int plus) {
+          if (minute == 0)       return "▶ بداية المباراة";
+          else if (minute == 45) return plus == 45 ? "⏩ بداية الشوط الثاني" : "⏸ نهاية الشوط الأول";
+          else if (minute >= 90) return "⏹ نهاية المباراة";
+          return "📢 حدث نظام";
+        }
+
+        String formatEventTime(int minute, int plus, int type) =>
+            type == 100 ? "$minute'"
+                : plus > 0 ? "$minute+$plus'" : "$minute'";
+
+        Icon getEventIcon(int type, String teamName, int status) {
           if (teamName == "نظام") {
-            return Icon(Icons.notifications_active, color: Colors.blue);
+            return const Icon(Icons.notifications_active, color: Colors.blue);
           }
           switch (type) {
-            case 1:
-              return Icon(Icons.sports_soccer, color: Colors.green);
-            case 2:
-              return Icon(Icons.warning_amber_rounded, color: Colors.yellow[700]);
-            case 3:
-              return Icon(
-                  status == 6
-                      ? Icons.warning_rounded
-                      : Icons.warning_amber_rounded,
-                  color: status == 6 ? Colors.red : Colors.orange);
-            case 4:
-              return Icon(Icons.block, color: Colors.red);
-            case 5:
-              return Icon(Icons.check_circle, color: Colors.green);
-            case 6:
-              return Icon(Icons.cancel, color: Colors.red);
-            case 7:
-              return Icon(Icons.remove_circle, color: Colors.red);
-            case 8:
-              return Icon(Icons.swap_horiz, color: Colors.blue);
-            case 22:
-              return Icon(Icons.close, color: Colors.orange);
-            case 100:
-              return Icon(Icons.timer, color: Colors.grey);
-            default:
-              return Icon(Icons.event, color: Colors.blue);
+            case 1:  return const Icon(Icons.sports_soccer, color: Colors.green);
+            case 2:  return const Icon(Icons.warning_amber_rounded, color: Colors.yellow);
+            case 3:  return Icon(
+                status == 6 ? Icons.warning_rounded : Icons.warning_amber_rounded,
+                color: status == 6 ? Colors.red : Colors.orange);
+            case 4:  return const Icon(Icons.block, color: Colors.red);
+            case 5:  return const Icon(Icons.check_circle, color: Colors.green);
+            case 6:  return const Icon(Icons.cancel, color: Colors.red);
+            case 7:  return const Icon(Icons.remove_circle, color: Colors.red);
+            case 8:  return const Icon(Icons.swap_horiz, color: Colors.blue);
+            case 22: return const Icon(Icons.close, color: Colors.orange);
+            case 100:return const Icon(Icons.timer, color: Colors.grey);
+            default: return const Icon(Icons.event, color: Colors.blue);
           }
         }
 
-        String getSystemMessage(int timeMinute, int timePlus) {
-          if (timeMinute == 0) {
-            return "▶ بدأت المباراة";
-          } else if (timeMinute == 45) {
-            return timePlus == 45 ? "⏩ بداية الشوط الثاني" : "⏸ نهاية الشوط الأول";
-          } else if (timeMinute >= 90) {
-            return "⏹ انتهت المباراة";
-          } else {
-            return "📢 حدث نظام";
-          }
-        }
-
-        String formatEventTime(int timeMinute, int timePlus, int type) {
-          return type == 100 ? "$timeMinute'" : timePlus > 0 ? "$timeMinute+$timePlus'" : "$timeMinute'";
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(8),
-          itemCount: eventsList.length,
-          itemBuilder: (context, index) {
-            final event = eventsList[index] as Map<String, dynamic>;
-            final int timeMinute = event["time_minute"] ?? 0;
-            final int timePlus = event["time_plus"] ?? 0;
-            final int type = event["type"] ?? 0;
-            final int status = event["status"] ?? 0;
-            final int teamId = event["team_id"] ?? 0;
-            final String teamName = getTeamName(teamId);
-            String eventType = getEventTypeDescription(type, status);
-            final String eventTime = formatEventTime(timeMinute, timePlus, type);
-
-            if (teamName == "نظام") {
-              eventType = getSystemMessage(timeMinute, timePlus);
-            }
-
-            String playerName = "";
-            if (event["player_name"] != null &&
-                event["player_name"] is Map<String, dynamic>) {
-              playerName = event["player_name"]["title"] ?? "";
-            }
-
-            String assistName = "";
-            if (event["assist_player_name"] != null &&
-                event["assist_player_name"] is Map<String, dynamic>) {
-              assistName = event["assist_player_name"]["title"] ?? "";
-            }
-
-            final eventIcon = getEventIcon(type, teamName , status);
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              elevation: 3,
-              child: ListTile(
-                onTap: () {
-                  final videoUrl = event["event_video"] as String?;
-                  if (videoUrl != null && videoUrl.isNotEmpty) {
-                    launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication);
-                  }
-                },
-                leading: Text(
-                  eventTime,
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+        /*────────────────────────  UI  ────────────────────────*/
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
+              children: [
+                // الخط الرأسي
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Container(width: 2, color: Colors.grey.shade300),
+                  ),
                 ),
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        "$eventType${(type != 8 && playerName.isNotEmpty) ? ' - $playerName' : ''}",
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.bold,
+
+                // قائمة الأحداث
+                ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  itemCount: eventsList.length,
+                  itemBuilder: (context, index) {
+                    final event     = eventsList[index] as Map<String, dynamic>;
+                    final timeMin   = event["time_minute"] ?? 0;
+                    final timePlus  = event["time_plus"] ?? 0;
+                    final type      = event["type"] ?? 0;
+                    final status    = event["status"] ?? 0;
+                    final teamId    = event["team_id"] ?? 0;
+                    final teamName  = getTeamName(teamId);
+
+                    /* أسماء اللاعبين */
+                    String playerName = '';
+                    if (event["player_name"] is Map<String, dynamic>) {
+                      playerName = event["player_name"]["title"] ?? '';
+                    }
+                    String assistName = '';
+                    if (event["assist_player_name"] is Map<String, dynamic>) {
+                      assistName = event["assist_player_name"]["title"] ?? '';
+                    }
+
+                    final bool isHome  = teamName == homeTeam["title"];
+                    final bool isAway  = teamName == awayTeam["title"];
+                    final bool isSys   = teamName == "نظام";
+
+                    /* نص الحدث */
+                    String eventTitle = getEventTypeDescription(type, status);
+                    if (isSys) {
+                      eventTitle = getSystemMessage(timeMin, timePlus);
+                    } else if (type == 8) {
+                      eventTitle = "🔄 تبديل";
+                    } else if (playerName.isNotEmpty) {
+                      eventTitle = "$eventTitle - $playerName";
+                    }
+
+                    /* بقية البيانات */
+                    final eventTime = formatEventTime(timeMin, timePlus, type);
+                    final icon      = getEventIcon(type, teamName, status);
+                    final videoUrl  = event["event_video"] as String? ?? '';
+                    final hasVideo  = videoUrl.isNotEmpty;
+
+                    final bgColor = isHome
+                        ? _getTeamColor(homeTeam["title"], homeTeam, awayTeam)
+                        .withOpacity(.12)
+                        : isAway
+                        ? _getTeamColor(awayTeam["title"], homeTeam, awayTeam)
+                        .withOpacity(.12)
+                        : Colors.brown;
+
+                    final card = _EventCard(
+                      time: eventTime,
+                      title: eventTitle,
+                      icon: icon,
+                      bgColor: bgColor,
+                      videoUrl: videoUrl,
+                      hasVideo: hasVideo,
+                      isSub: type == 8,
+                      playerName: playerName,
+                      assistName: assistName,
+                    );
+
+                    /* رسم الحدث */
+                    if (isSys) {
+                      // بطاقة في المنتصف + الخط أسفلها
+                      return Column(
+                        children: [
+                          Transform.translate(
+                            offset: const Offset(0, -4),
+                            child: card,
+                          ),
+                          const _DotOnLine(),
+                        ],
+                      );
+                    }
+
+                    // للفرق: صاحب الأرض يسار – الضيف يمين
+                    return Row(
+                      mainAxisAlignment:
+                      isHome ? MainAxisAlignment.start : MainAxisAlignment.end,
+                      children: isHome
+                          ? [
+                        // يسار: البطاقة تغطي قليلاً الخط
+                        Transform.translate(
+                          offset: const Offset(-8, 0), // تتقدم فوق الخط
+                          child: card,
                         ),
-                        maxLines: 1,
-                      ),
-                    ),
-                    if ((event["event_video"] as String?)?.isNotEmpty ?? false)
-                      Spacer(),
-                    if ((event["event_video"] as String?)?.isNotEmpty ?? false)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Icon(
-                          Icons.play_circle_filled,
-                          color: Colors.blue,
-                          size: 20,
+                        const _DotOnLine(),
+                      ]
+                          : [
+                        const _DotOnLine(),
+                        Transform.translate(
+                          offset: const Offset(8, 0),
+                          child: card,
                         ),
-                      )
-                  ],
+                      ],
+                    );
+                  },
                 ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (type == 8)
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(Icons.logout, color: Colors.red, size: 16),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text("خروج: ${playerName.isNotEmpty ? playerName : 'غير محدد'}",
-                                style: TextStyle(fontFamily: 'Cairo')),
-                          ),
-                          SizedBox(width: 10),
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(Icons.login, color: Colors.green, size: 16),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text("دخول: ${assistName.isNotEmpty ? assistName : 'غير محدد'}",
-                                style: TextStyle(fontFamily: 'Cairo')),
-                          ),
-                        ],
-                      )
-                    else if (assistName.isNotEmpty)
-                      Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(Icons.assistant_rounded, color: Colors.purple, size: 16),
-                          ),
-                          SizedBox(width: 4),
-                          Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text("تمريرة حاسمة: $assistName",
-                                style: TextStyle(fontFamily: 'Cairo')),
-                          ),
-                        ],
-                      ),
-                    if (teamName != "نظام")
-                      Row(
-                        children: [
-                          Icon(Icons.groups_rounded, color: _getTeamColor(teamName, homeTeam, awayTeam), size: 16),
-                          SizedBox(width: 4),
-                          Text("الفريق: $teamName",
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              color: _getTeamColor(teamName, homeTeam, awayTeam),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
+              ],
             );
           },
         );
@@ -773,19 +859,6 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
     if (teamName == homeTeam["title"]) return Colors.blue;
     if (teamName == awayTeam["title"]) return Colors.red;
     return Colors.grey;
-  }
-
-  Color _getTimeColor(int type) {
-    switch (type) {
-      case 100:
-        return Colors.grey;
-      case 8:
-        return Colors.blue;
-      case 3:
-        return Colors.red;
-      default:
-        return Colors.green;
-    }
   }
 
   Widget buildStatCard(String statLabel, Map<String, dynamic> statData,
@@ -1522,101 +1595,106 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          futureResults = fetchDetails();
-        });
-        await futureResults;
-      },
-      child: FutureBuilder(
-        future: futureResults,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-              appBar: AppBar(title: const Text("تفاصيل المباراة")),
-              body: Center(child: buildLoadingScreen()),
-            );
-          } else if (snapshot.hasError ||
-              !snapshot.hasData ||
-              (snapshot.data as Map).isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text("تفاصيل المباراة")),
-              body: const Center(
-                child: Text("لا توجد بيانات متاحة.",
-                    style: TextStyle(color: Colors.red, fontSize: 18)),
-              ),
-            );
-          }
-          final detailsData = Map<String, dynamic>.from(snapshot.data as Map);
-          final details = Map<String, dynamic>.from(detailsData['details']);
-          final matchInfo = Map<String, dynamic>.from(details['match_info']);
-          final teams = Map<String, dynamic>.from(details['teams']);
-          final videos = details['videos'] ?? [];
-          final statistics = details['statistics'] ?? {};
-          final lastEncounters = details['last_encounters'] ?? [];
-          final lastFiveMatches = details['last_five_matches'] ?? {};
-          final prediction = details['prediction'] ?? {};
-
-          return DefaultTabController(
-            length: 9,
-            child: Scaffold(
-              appBar: AppBar(
-                title: const Text("تفاصيل المباراة"),
-              ),
-              body: Column(
-                children: [
-                  buildTeamHeader(teams, matchInfo),
-                  buildMatchStatusSection(matchInfo),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: TabBar(
-                      isScrollable: true,
-                      labelColor: Theme.of(context).colorScheme.onBackground,
-                      unselectedLabelColor: Theme.of(context).disabledColor,
-                      indicatorColor: Theme.of(context).colorScheme.primary,
-                      tabs: const [
-                        Tab(text: "معلومات المباراة"),
-                        Tab(text: "الأحداث"),
-                        Tab(text: "فيديوهات"),
-                        Tab(text: "الإحصائيات"),
-                        Tab(text: "التشكيل"),
-                        Tab(text: "المواجهات السابقة"),
-                        Tab(text: "الترتيب"),
-                        Tab(text: "الاخبار"),
-                        Tab(text: "التوقعات"),
-                      ],
-                    ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 400),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            setState(() {
+              futureResults = fetchDetails();
+            });
+            await futureResults;
+          },
+          child: FutureBuilder(
+            future: futureResults,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
+                  body: Center(child: buildLoadingScreen()),
+                );
+              } else if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  (snapshot.data as Map).isEmpty) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
+                  body: const Center(
+                    child: Text("لا توجد بيانات متاحة.",
+                        style: TextStyle(color: Colors.red, fontSize: 18)),
                   ),
+                );
+              }
+              final detailsData = Map<String, dynamic>.from(snapshot.data as Map);
+              final details = Map<String, dynamic>.from(detailsData['details']);
+              final matchInfo = Map<String, dynamic>.from(details['match_info']);
+              final teams = Map<String, dynamic>.from(details['teams']);
+              final videos = details['videos'] ?? [];
+              final statistics = details['statistics'] ?? {};
+              final lastEncounters = details['last_encounters'] ?? [];
+              final lastFiveMatches = details['last_five_matches'] ?? {};
+              final prediction = details['prediction'] ?? {};
 
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              buildMatchInfoTab(matchInfo),
-                              buildLastFiveMatchesSection(
-                                  Map<String, dynamic>.from(lastFiveMatches)),
-                            ],
-                          ),
+              return DefaultTabController(
+                length: 9,
+                child: Scaffold(
+                  appBar: AppBar(
+                    title: const Text("تفاصيل المباراة"),
+                  ),
+                  body: Column(
+                    children: [
+                      buildTeamHeader(teams, matchInfo),
+                      buildMatchStatusSection(matchInfo),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: TabBar(
+                          isScrollable: true,
+                          labelColor: Theme.of(context).colorScheme.onBackground,
+                          unselectedLabelColor: Theme.of(context).disabledColor,
+                          indicatorColor: Theme.of(context).colorScheme.primary,
+                          tabs: const [
+                            Tab(text: "معلومات المباراة"),
+                            Tab(text: "الأحداث"),
+                            Tab(text: "فيديوهات"),
+                            Tab(text: "الإحصائيات"),
+                            Tab(text: "التشكيل"),
+                            Tab(text: "المواجهات السابقة"),
+                            Tab(text: "الترتيب"),
+                            Tab(text: "الاخبار"),
+                            Tab(text: "التوقعات"),
+                          ],
                         ),
-                        buildEventsTab(),
-                        buildVideosTab(videos),
-                        buildStatisticsTab(Map<String, dynamic>.from(statistics), teams),
-                        buildLineupTab(),
-                        buildPreviousEncountersTab(lastEncounters),
-                        buildStandingsTab(),
-                        buildNewsTab(),
-                        buildPredictionTab(Map<String, dynamic>.from(prediction)),
-                      ],
-                    ),
+                      ),
+
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  buildMatchInfoTab(matchInfo),
+                                  buildLastFiveMatchesSection(
+                                      Map<String, dynamic>.from(lastFiveMatches)),
+                                ],
+                              ),
+                            ),
+                            buildEventsTab(),
+                            buildVideosTab(videos),
+                            buildStatisticsTab(Map<String, dynamic>.from(statistics), teams),
+                            buildLineupTab(),
+                            buildPreviousEncountersTab(lastEncounters),
+                            buildStandingsTab(),
+                            buildNewsTab(),
+                            buildPredictionTab(Map<String, dynamic>.from(prediction)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

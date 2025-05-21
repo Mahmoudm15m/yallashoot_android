@@ -56,6 +56,7 @@ class _LivesScreenState extends State<LivesScreen> {
   ApiData apiData = ApiData();
 
   BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
 
   Future<Map<String, dynamic>> fetchLives() async {
     try {
@@ -72,17 +73,20 @@ class _LivesScreenState extends State<LivesScreen> {
     AdManager.initializeAds(context);
     futureResults = fetchLives();
 
-    _bannerAd = AdHelper.loadBannerAd(
-      onAdLoaded: (ad) {
-        setState(() {
-          _bannerAd = ad as BannerAd;
-        });
-      },
-      onAdFailedToLoad: (ad, error) {
-        ad.dispose();
-        print('BannerAd failed to load: $error');
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final int screenWidth = MediaQuery.of(context).size.width.toInt();
+
+      _bannerAd = AdHelper.loadAdaptiveBanner(
+        width: screenWidth,
+        onLoaded: (ad) {
+          setState(() {
+            _isAdLoaded = true;
+            _bannerAd = ad;
+          });
+        },
+        onPermanentFail: (e) => debugPrint(e.message),
+      );
+    });
   }
 
   @override
@@ -93,113 +97,118 @@ class _LivesScreenState extends State<LivesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("البث المتاح"),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() {
-            futureResults = fetchLives();
-          });
-          await futureResults;
-        },
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: futureResults,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('حدث خطأ: ${snapshot.error}'));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('لا توجد بيانات'));
-            } else {
-              var livesData = snapshot.data!;
-              final lives = livesData["lives"];
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 400),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("البث المتاح"),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                futureResults = fetchLives();
+              });
+              await futureResults;
+            },
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: futureResults,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('حدث خطأ: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('لا توجد بيانات'));
+                } else {
+                  var livesData = snapshot.data!;
+                  final lives = livesData["lives"];
 
-              if (lives.isEmpty) {
-                return const Center(
-                  child: Text("لا توجد بثوث متاحه حاليا !"),
-                );
-              }
+                  if (lives.isEmpty) {
+                    return const Center(
+                      child: Text("لا توجد بثوث متاحه حاليا !"),
+                    );
+                  }
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(8.0),
-                      itemCount: lives.length,
-                      itemBuilder: (context, index) {
-                        final match = lives[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          elevation: 3,
-                          child: InkWell(
-                            onTap: () async {
-                              Map<String, dynamic> streamLinks = match["stream_links"];
-                              await AdManager.showInterstitialAd(context);
-                              openExternalVideoPlayer(context , streamLinks);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(8.0),
+                          itemCount: lives.length,
+                          itemBuilder: (context, index) {
+                            final match = lives[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8.0),
+                              elevation: 3,
+                              child: InkWell(
+                                onTap: () async {
+                                  Map<String, dynamic> streamLinks = match["stream_links"];
+                                  await AdManager.showInterstitialAd(context);
+                                  openExternalVideoPlayer(context , streamLinks);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Image.network(
-                                        match["home_logo"],
-                                        width: 50,
-                                        height: 50,
+                                      Column(
+                                        children: [
+                                          Image.network(
+                                            match["home_logo"],
+                                            width: 50,
+                                            height: 50,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            match["home_team"],
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        match["home_team"],
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      const Expanded(
+                                        child: Center(
+                                          child: Text(
+                                            "اضغط لمشاهدة البث",
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                        ),
+                                      ),
+                                      Column(
+                                        children: [
+                                          Image.network(
+                                            match["away_logo"],
+                                            width: 50,
+                                            height: 50,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            match["away_team"],
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                  const Expanded(
-                                    child: Center(
-                                      child: Text(
-                                        "اضغط لمشاهدة البث",
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                  ),
-                                  Column(
-                                    children: [
-                                      Image.network(
-                                        match["away_logo"],
-                                        width: 50,
-                                        height: 50,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        match["away_team"],
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  if (_bannerAd != null)
-                    SizedBox(
-                      width: _bannerAd!.size.width.toDouble(),
-                      height: _bannerAd!.size.height.toDouble(),
-                      child: AdWidget(ad: _bannerAd!),
-                    ),
-                ],
-              );
-            }
-          },
+                            );
+                          },
+                        ),
+                      ),
+                      if (_bannerAd != null && _isAdLoaded)
+                        SizedBox(
+                          width: _bannerAd!.size.width.toDouble(),
+                          height: _bannerAd!.size.height.toDouble(),
+                          child: AdWidget(ad: _bannerAd!),
+                        ),
+                    ],
+                  );
+                }
+              },
+            ),
+          ),
         ),
       ),
     );
