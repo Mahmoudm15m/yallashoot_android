@@ -1,11 +1,11 @@
 {
-    "name": "yallashoot",
-    "short_name": "yallashoot",
-    "start_url": ".",
+    "name": "Syria Live - سوريا لايف",
+    "short_name": "Syria Live",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Syria Live - شاهد البث المباشر للمباريات والأحداث الرياضية من سوريا والعالم العربي لحظة بلحظة.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

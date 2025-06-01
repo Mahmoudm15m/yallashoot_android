@@ -49,7 +49,7 @@ class _RanksScreenState extends State<RanksScreen> {
                   padding: EdgeInsets.zero,
                   onPressed: (){
                     Navigator.push(context, MaterialPageRoute(builder: (context){
-                      return LeagueScreen(link: item["link"], id: item["rank_id"]);
+                      return LeagueScreen( id: item["rank_id"]);
                     }));
                   },
                   icon: Card(
@@ -58,7 +58,7 @@ class _RanksScreenState extends State<RanksScreen> {
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(8),
                       leading: Image.network(
-                        item["image"],
+                        "https://api.syria-live.fun/img_proxy?url=" + item["image"],
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,

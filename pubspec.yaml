@@ -30,8 +30,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
   http:
   shimmer:
   intl: ^0.19.0
@@ -39,11 +37,14 @@ dependencies:
   sticky_headers:
   flutter_html: ^3.0.0
   unity_ads_plugin: ^0.3.24
-  google_mobile_ads: ^6.0.0
   shared_preferences:
+  auto_size_text: ^3.0.0
+  cached_network_image:
+  media_kit: ^1.2.0
+  media_kit_video: ^1.3.0
+  media_kit_libs_video: ^1.0.6
+  seo_renderer: ^0.6.0
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

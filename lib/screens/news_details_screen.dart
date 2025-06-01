@@ -38,68 +38,62 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 400),
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('تفاصيل الخبر'),
-          ),
-          body: FutureBuilder<Map<String, dynamic>>(
-            future: futureResults,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError ||
-                  snapshot.data == null ||
-                  snapshot.data!.isEmpty) {
-                return const Center(child: Text('حدث خطأ أثناء جلب البيانات'));
-              } else {
-                final newsDetails = snapshot.data!['news_details']?['data'];
-                if (newsDetails == null) {
-                  return const Center(child: Text('لا توجد بيانات للخبر'));
-                }
-                return Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Center(
-                          child: Image.network(
-                            widget.img,
-                            errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.broken_image, size: 100),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          newsDetails['title'] ?? 'بدون عنوان',
-                          style: const TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
-                        Html(
-                          data: (newsDetails['full_news'] != null && (newsDetails['full_news'] as String).isNotEmpty)
-                              ? newsDetails['full_news']
-                              : (newsDetails['news_desc'] ?? 'لا يوجد وصف للخبر'),
-                          style: {
-                            "img": Style(
-                              width: Width(MediaQuery.of(context).size.width * 0.95),
-                            ),
-                          },
-                        )
-                      ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تفاصيل الخبر'),
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: futureResults,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError ||
+              snapshot.data == null ||
+              snapshot.data!.isEmpty) {
+            return const Center(child: Text('حدث خطأ أثناء جلب البيانات'));
+          } else {
+            final newsDetails = snapshot.data!['news_details']?['data'];
+            if (newsDetails == null) {
+              return const Center(child: Text('لا توجد بيانات للخبر'));
+            }
+            return Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: Image.network(
+                        "https://api.syria-live.fun/img_proxy?url=" + widget.img,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 100),
+                      ),
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      newsDetails['title'] ?? 'بدون عنوان',
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Html(
+                      data: (newsDetails['full_news'] != null && (newsDetails['full_news'] as String).isNotEmpty)
+                          ? newsDetails['full_news']
+                          : (newsDetails['news_desc'] ?? 'لا يوجد وصف للخبر'),
+                      style: {
+                        "img": Style(
+                          width: Width(MediaQuery.of(context).size.width * 0.95),
+                        ),
+                      },
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
   }

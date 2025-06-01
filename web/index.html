@@ -1,38 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="yallashoot">
+  <title>سوريا لايف - بث مباشر مباريات اليوم | جدول المباريات وتحليلات لحظة بلحظة</title>
+  <meta name="description" content="تابع مباريات اليوم مباشرة مع سوريا لايف. تغطية حية، أخبار، جداول، وإحصائيات لحظة بلحظة لأهم الدوريات العربية والعالمية. بديل يلا شوت الأفضل.">
+  <meta name="keywords" content="سوريا لايف, yalla shoot, يلا شوت, بث مباشر, مباريات اليوم, جدول المباريات, يلا شوت مباشر, syria live, مشاهدة مباراة اليوم, لايف مباريات, قنوات رياضية مباشرة, روابط بث مباشر, كورة لايف">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://syrialive.app/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="سوريا لايف | بث مباشر مباريات اليوم - Yalla Shoot">
+  <meta property="og:description" content="تابع الآن مباريات اليوم مع سوريا لايف - المنصة الأفضل للبث المباشر، الأخبار، والجداول الكروية لحظة بلحظة.">
+  <meta property="og:image" content="icons/Icon-512.png">
+  <meta property="og:url" content="https://syrialive.app">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="سوريا لايف - بث مباشر لحظة بلحظة">
+  <meta name="twitter:description" content="تابع مباريات اليوم بث مباشر مع سوريا لايف. تغطية فورية وتحليلات وأهداف أهم البطولات العالمية.">
+  <meta name="twitter:image" content="icons/Icon-512.png">
+
+  <!-- Icons -->
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>yallashoot</title>
   <link rel="manifest" href="manifest.json">
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest" type="application/javascript"></script>
 </head>
+
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+
+<!-- H1 مُحسّن لسيو -->
+<h1 style="display: none;">
+  سوريا لايف - بث مباشر مباريات اليوم وجدول أهم البطولات
+</h1>
+
+
+<!-- وصف داخلي سيو -->
+<p style="display: none;">
+  مرحبًا بكم في سوريا لايف، وجهتكم الأولى لمشاهدة مباريات اليوم بث مباشر، جدول المباريات، التحليلات، وقنوات البث بدون تقطيع.
+</p>
+
+<!-- روابط داخلية وهمية -->
+<nav style="display: none;">
+  <a href="#matches">مباريات اليوم</a>
+  <a href="#schedule">جدول البث</a>
+  <a href="#channels">قنوات رياضية</a>
+</nav>
+
+<!-- شاشة تحميل -->
+<div id="loading" role="status" aria-label="جاري تحميل موقع سوريا لايف">
+  <div class="loading-content">
+    <img src="icons/Icon-512.png" alt="شعار سوريا لايف - بث مباشر مباريات اليوم" class="logo">
+    <h2>
+      أهلاً بكم في موقع <span style="color:#ffffff;">سوريا لايف</span>، المكان الأفضل لمشاهدة المباريات اليوم بث مباشر، معرفة جدول المباريات، ومتابعة التحليلات لحظة بلحظة.
+    </h2>
+    <div class="spinner"></div>
+  </div>
+  <style>
+    #loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      background: #007BFF;
+      direction: rtl;
+      z-index: 9999;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      color: #ffffff;
+    }
+    .loading-content {
+      animation: fadeIn 1s ease-in-out;
+      max-width: 90%;
+    }
+    .logo {
+      width: 120px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+      line-height: 1.8rem;
+    }
+    .spinner {
+      border: 6px solid rgba(255, 255, 255, 0.3);
+      border-top: 6px solid #ffffff;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</div>
+
+<!-- تطبيق Flutter -->
+<script src="flutter_bootstrap.js" async></script>
+
+<!-- إخفاء شاشة التحميل بعد 5 ثواني وجاهزية Flutter -->
+<script>
+  let minDelayPassed = false;
+  let flutterReady = false;
+
+  setTimeout(() => {
+    minDelayPassed = true;
+    tryRemoveLoading();
+  }, 5000);
+
+  window.addEventListener('flutter-first-frame', () => {
+    flutterReady = true;
+    tryRemoveLoading();
+  });
+
+  function tryRemoveLoading() {
+    if (minDelayPassed && flutterReady) {
+      const loading = document.getElementById('loading');
+      if (loading) {
+        loading.style.opacity = 1;
+        loading.style.transition = 'opacity 0.5s ease';
+        loading.style.opacity = 0;
+        setTimeout(() => loading.remove(), 500);
+      }
+    }
+  }
+</script>
 </body>
 </html>
