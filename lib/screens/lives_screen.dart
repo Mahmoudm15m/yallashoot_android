@@ -164,7 +164,7 @@ class _LivesScreenState extends State<LivesScreen> {
                                     context,
                                     CupertinoPageRoute(
                                       builder: (_) =>
-                                          M3u8Screen(streamLinks: links),
+                                          IframeStreamScreen(streamLinks: links),
                                     ),
                                   );
 
