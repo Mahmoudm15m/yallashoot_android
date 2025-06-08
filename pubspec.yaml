@@ -40,10 +40,9 @@ dependencies:
   shared_preferences:
   auto_size_text: ^3.0.0
   cached_network_image:
-  media_kit: ^1.2.0
-  media_kit_video: ^1.3.0
-  media_kit_libs_video: ^1.0.6
+  webview_flutter: ^4.13.0
   seo_renderer: ^0.6.0
+  google_mobile_ads: ^6.0.0
 
   cupertino_icons: ^1.0.8
 

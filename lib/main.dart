@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:seo_renderer/renderers/text_renderer/text_renderer_vm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:yallashoot/screens/home_screen.dart';
-import 'package:yallashoot/screens/htm_widget.dart';
 import 'package:yallashoot/screens/news_screen.dart';
 import 'package:yallashoot/screens/ranks_screen.dart';
 import 'package:yallashoot/screens/settings_screen.dart';
@@ -14,7 +12,7 @@ import 'api/main_api.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+  MobileAds.instance.initialize();
   await initializeDateFormatting('en', '');
   final prefs = await SharedPreferences.getInstance();
   final isDarkMode = prefs.getBool('isDarkMode') ?? false;
@@ -33,23 +31,16 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _isDarkMode = false;
-  ApiData apiData = ApiData();
-  Map<String, dynamic>? adsData;
+  final ApiData apiData = ApiData();
   Timer? _adsRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _isDarkMode = widget.initialDarkMode;
-    fetchAds();
-    startAdsAutoRefresh();
-  }
-
-  void startAdsAutoRefresh() {
-    _adsRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      fetchAds();
-    });
+    fetchUpdates();
   }
 
   @override
@@ -58,14 +49,62 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  Future<void> fetchAds() async {
+  Future<void> fetchUpdates() async {
+    const int currentVersion = 7;
     try {
-      final data = await apiData.getAds();
-      setState(() {
-        adsData = data;
-      });
+      final data = await apiData.checkUpdate(currentVersion);
+      if (data['ok'] == true && data['version'] > currentVersion) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = _navigatorKey.currentContext;
+          if (ctx == null) return;
+          showDialog(
+            context: ctx,
+            barrierDismissible: false,
+            builder: (_) => WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                title: const Text('تحديث متوفر'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('رقم الاصدار: ${data['version']}'),
+                    const SizedBox(height: 8),
+                    Text(data['changes'] ?? ''),
+                  ],
+                ),
+                actions: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey,
+                      borderRadius: BorderRadius.circular(20)
+                    ),
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: () async {
+                        final url = data['link'] as String?;
+                        if (url != null) {
+                          await launchUrl(
+                            Uri.parse(url),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: Text('تحديث الآن' , style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold
+                      ),),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      }
     } catch (e) {
-      // ممكن تضيف لوج هنا لو حبيت
+      debugPrint('Update check failed: $e');
     }
   }
 
@@ -78,6 +117,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       locale: const Locale('en'),
       supportedLocales: const [Locale('en'), Locale('ar')],
@@ -87,24 +127,20 @@ class _MyAppState extends State<MyApp> {
       home: MainScreen(
         isDarkMode: _isDarkMode,
         toggleDarkMode: _toggleDarkMode,
-        adsData: adsData,
       ),
     );
   }
 }
 
-
 class MainScreen extends StatefulWidget {
   final bool isDarkMode;
   final Function(bool) toggleDarkMode;
-  final Map<String, dynamic>? adsData;
 
   const MainScreen({
-    Key? key,
+    super.key,
     required this.isDarkMode,
     required this.toggleDarkMode,
-    required this.adsData,
-  }) : super(key: key);
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -112,113 +148,92 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+  Timer? _retryTimer;
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+  }
+
+  @override
+  void dispose() {
+    _retryTimer?.cancel();
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() {
+    _bannerAd?.dispose();
+    _isBannerAdLoaded = false;
+
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-9181001319721306/2051538525',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          _retryTimer = Timer(const Duration(seconds: 30), () {
+            _loadBannerAd();
+          });
+        },
+      ),
+    );
+
+    _bannerAd!.load();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final encodedHtml = widget.adsData?['ads']?['under_screen'];
-    String? decodedHtml;
+    final screens = <Widget>[
+      const HomeScreen(),
+      const RanksScreen(),
+      const NewsScreen(),
+      SettingsScreen(
+        isDarkMode: widget.isDarkMode,
+        onThemeChanged: widget.toggleDarkMode,
+      ),
+    ];
 
-    if (encodedHtml != null) {
-      try {
-        decodedHtml = utf8.decode(base64.decode(encodedHtml));
-      } catch (e) {
-        decodedHtml = null;
-      }
-    }
-
-    if (isMobile) {
-      final screens = <Widget>[
-        const HomeScreen(),
-        const RanksScreen(),
-        const NewsScreen(),
-        SettingsScreen(
-          isDarkMode: widget.isDarkMode,
-          onThemeChanged: widget.toggleDarkMode,
-        ),
-      ];
-
-      return Scaffold(
-        body: screens[_selectedIndex],
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (decodedHtml != null)
-              HtmlWidget(
-                width: 320,
-                height: 100,
-                htmlContent: decodedHtml,
-              ),
-            BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: _onItemTapped,
-              selectedItemColor: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white
-                  : Colors.black,
-              unselectedItemColor: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[400]
-                  : Colors.grey[800],
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'مباريات اليوم'),
-                BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'الترتيب'),
-                BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: 'الأخبار'),
-                BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'الإعدادات'),
-              ],
+    return Scaffold(
+      body: Column(
+        children: [
+          Expanded(child: screens[_selectedIndex]),
+          if (_isBannerAdLoaded && _bannerAd != null)
+            Container(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              alignment: Alignment.center,
+              child: AdWidget(ad: _bannerAd!),
             ),
-          ],
-        ),
-      );
-    } else {
-      return DefaultTabController(
-        length: 4,
-        initialIndex: _selectedIndex,
-        child: Scaffold(
-          appBar: AppBar(
-            title: TextRenderer(
-              child: Text('سوريا لايف'),
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(widget.isDarkMode ? Icons.dark_mode : Icons.light_mode),
-                onPressed: () => widget.toggleDarkMode(!widget.isDarkMode),
-              ),
-            ],
-            bottom: TabBar(
-              tabs: [
-                Tab(text: 'مباريات اليوم'),
-                Tab(text: 'الترتيب'),
-                Tab(text: 'الأخبار'),
-                Tab(text: 'الإعدادات'),
-              ],
-            ),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    const HomeScreen(),
-                    const RanksScreen(),
-                    const NewsScreen(),
-                    SettingsScreen(
-                      isDarkMode: widget.isDarkMode,
-                      onThemeChanged: widget.toggleDarkMode,
-                    ),
-                  ],
-                ),
-              ),
-              if (decodedHtml != null)
-                HtmlWidget(
-                  width: MediaQuery.of(context).size.width,
-                  height: 100,
-                  htmlContent: decodedHtml,
-                ),
-            ],
-          ),
-        ),
-      );
-    }
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black,
+        unselectedItemColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[400]
+            : Colors.grey[800],
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'مباريات اليوم'),
+          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'الترتيب'),
+          BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: 'الأخبار'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'الإعدادات'),
+        ],
+      ),
+    );
   }
 }

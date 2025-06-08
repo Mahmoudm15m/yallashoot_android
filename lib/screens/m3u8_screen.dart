@@ -1,12 +1,7 @@
-import 'dart:async';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui; // ignore: undefined_prefixed_name
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class IframeStreamScreen extends StatefulWidget {
-  /// خريطة من اسم الجودة (مثلاً 'عالي', 'منخفض', 'متعدد') إلى رابط الـ iframe
+class IframeStreamScreen extends StatelessWidget {
   final Map<String, String> streamLinks;
 
   const IframeStreamScreen({
@@ -14,131 +9,64 @@ class IframeStreamScreen extends StatefulWidget {
     required this.streamLinks,
   }) : super(key: key);
 
-  @override
-  State<IframeStreamScreen> createState() => _IframeStreamScreenState();
-}
-
-class _IframeStreamScreenState extends State<IframeStreamScreen> {
-  late final html.IFrameElement _iframe;
-  late String _currentKey;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // تسجيل عنصر الـ IFrame (خاص بالويب فقط)
-    if (kIsWeb) {
-      _iframe = html.IFrameElement()
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..allowFullscreen = true;
-
-      // ignore: undefined_prefixed_name
-      ui.platformViewRegistry.registerViewFactory(
-        'iframe-stream',
-            (int viewId) => _iframe,
-      );
-    }
-
-    // نبدأ بأول مفتاح (أول جودة) من الخريطة
-    _currentKey = widget.streamLinks.keys.first;
-    _loadCurrentUrl();
-  }
-
-  /// يقوم بتحديث رابط الـ iframe بحسب الجودة المحددة الآن
-  void _loadCurrentUrl() {
-    final url = widget.streamLinks[_currentKey]!;
-    if (kIsWeb) {
-      _iframe.src = url;
-    }
-  }
-
-  /// يدخل أو يخرج من وضع ملء الشاشة في المتصفح
-  Future<void> _toggleFullScreen() async {
-    if (!kIsWeb) return;
-    if (html.document.fullscreenElement != null) {
-      html.document.exitFullscreen();
-    } else {
-      await html.document.documentElement?.requestFullscreen();
-    }
+  Future<void> _launchStream(String url) async {
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
-    // قائمة أسماء الجودة (المفاتيح)
-    final keys = widget.streamLinks.keys.toList();
+    final keys = streamLinks.keys.toList();
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
+      appBar: AppBar(
+        title: const Text('روابط البث'),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ---- 1) شريط اختيار الجودة فوق المشغل ----
-            Container(
-              color: Colors.grey[900],
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  // قائمة أفقيّة قابلة للتمرير (جميع المفاتيح بجانب بعض)
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: keys.map((k) {
-                          final bool isSelected = k == _currentKey;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(0, 36),
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                backgroundColor:
-                                isSelected ? Colors.blueGrey[700] : Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              onPressed: () {
-                                if (_currentKey != k) {
-                                  setState(() {
-                                    _currentKey = k;
-                                    _loadCurrentUrl();
-                                  });
-                                }
-                              },
-                              child: Text(
-                                k,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.grey[300],
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  // زر ملء الشاشة
-                  IconButton(
-                    icon: const Icon(Icons.fullscreen, color: Colors.white),
-                    onPressed: _toggleFullScreen,
-                  ),
-                ],
+            const Text(
+              'اختر البث لبدء المشاهدة:',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-
-            // ---- 2) المشغل (iframe) تحت شريط الجودة ----
+            const SizedBox(height: 16),
             Expanded(
-              child: kIsWeb
-                  ? const HtmlElementView(viewType: 'iframe-stream')
-                  : const Center(
-                child: Text(
-                  'هذه الشاشة مخصصة للويب فقط.',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+              child: ListView.separated(
+                itemCount: keys.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final key = keys[index];
+                  final url = streamLinks[key]!;
+
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => _launchStream(url),
+                    child: Text(
+                      key,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

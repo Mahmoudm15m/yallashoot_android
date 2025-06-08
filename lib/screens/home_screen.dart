@@ -2,26 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:yallashoot/screens/league_screen.dart';
 import 'package:yallashoot/screens/search_screen.dart';
 import '../api/main_api.dart';
 import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart';
 import 'lives_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html;
 
-bool get _isDesktopWeb {
-  if (!kIsWeb) return false; // مش ويب أساساً
-  final ua = html.window.navigator.userAgent.toLowerCase();
-  if (ua.contains('mobi') ||
-      ua.contains('android') ||
-      ua.contains('ipad') ||
-      ua.contains('linux') ||
-      ua.contains('iphone')) {
-    return false;
-  }
-  return true;
-}
+
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
   @override
@@ -172,18 +161,17 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: _showLiveOnly ? 'عرض الكل' : 'عرض اللايف فقط',
               onPressed: () => setState(() => _showLiveOnly = !_showLiveOnly),
             ),
-            if (!_isDesktopWeb) ...[
-              Spacer(),
-              IconButton(
-                  onPressed: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context){
-                      return LivesScreen();
-                    }));
-                  },
-                  icon: Text("البث المتاح" , style: TextStyle(fontSize: 16 , color: Colors.blueAccent),)
-              ),
-            ],
+            Spacer(),
+            IconButton(
+                onPressed: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context){
+                    return LivesScreen();
+                  }));
+                },
+                icon: Text("البث المتاح" , style: TextStyle(fontSize: 16 , color: Colors.blueAccent),)
+            ),
           ],
+
         ),
       ),
       body: LayoutBuilder(
@@ -291,7 +279,11 @@ class _ChampSectionState extends State<_ChampSection> {
   bool _isExpanded = true;
 
   void _toggleExpanded() => setState(() => _isExpanded = !_isExpanded);
-  void _printId()        => debugPrint(widget.champ['id'].toString());
+  void _printId() {
+    Navigator.push(context, MaterialPageRoute(builder: (context){
+      return LeagueScreen(id: widget.champ['id'].toString());
+    }));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +419,8 @@ class _MatchCardState extends State<_MatchCard>
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => MatchDetails(id: widget.match['id'])),
+        MaterialPageRoute(builder: (_) => MatchDetails(id: widget.match['id'] , leagueId: widget.match['league']['id'].toString(),
+        )),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

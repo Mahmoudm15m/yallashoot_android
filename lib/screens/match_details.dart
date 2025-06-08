@@ -4,10 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
+import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
 import '../functions/base_functions.dart';
 import '../functions/clock_timer.dart';
-import 'htm_widget.dart';
 import 'news_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -156,7 +156,12 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
 
 class MatchDetails extends StatefulWidget {
   final String id;
-  const MatchDetails({required this.id, Key? key}) : super(key: key);
+  final String leagueId;
+  const MatchDetails({
+    required this.id,
+    required this.leagueId,
+    Key? key,
+  }) : super(key: key);
 
   @override
   _MatchDetailsState createState() => _MatchDetailsState();
@@ -167,7 +172,7 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
   late Future<Map<String, dynamic>> futureLineup;
   late Future<Map<String, dynamic>> futureEvents;
   late Future<Map<String, dynamic>> futureNews;
-  late Future<Map<String, dynamic>> futureStanding;
+  late Future<Map<String, dynamic>> futureRanks;
   bool showHomeTeam = true;
   ApiData yasScore = ApiData();
   Map<String, dynamic>? adsData;
@@ -200,7 +205,41 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
     futureResults = fetchDetails();
     futureLineup = yasScore.getMatchLinesUp(widget.id);
     futureEvents = yasScore.getMatchEvents(widget.id);
-    futureStanding = yasScore.getMatchLeagueRanks(widget.id);
+
+    futureRanks = (() async {
+      try {
+        final champRes = await yasScore
+            .getChampionStanding(widget.leagueId) as Map<String, dynamic>;
+        final leagueList = champRes['data']['league'] as List<dynamic>;
+
+        final onlyColors = leagueList.isNotEmpty &&
+            leagueList.first.keys.length == 1 &&
+            leagueList.first.containsKey('color');
+
+        if (onlyColors) {
+          final cupRes = await yasScore
+              .getCupStanding(widget.leagueId) as Map<String, dynamic>;
+          final standings =
+          cupRes['data']['standings'] as Map<String, dynamic>?;
+          final groups = standings?['groups'] as Map<String, dynamic>?;
+
+          if (groups == null || groups.isEmpty) {
+            final groupsRes = await yasScore
+                .getChampionGroups(widget.leagueId) as Map<String, dynamic>;
+            return groupsRes;
+          }
+
+          return cupRes;
+        }
+
+        return champRes;
+      } catch (_) {
+        final groupsRes = await yasScore
+            .getChampionGroups(widget.leagueId) as Map<String, dynamic>;
+        return groupsRes;
+      }
+    })();
+
     futureNews = yasScore.getMatchNews(widget.id);
   }
 
@@ -1229,93 +1268,429 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
     );
   }
 
-  Widget buildStandingsTab() {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: futureStanding,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: buildLoadingScreen());
-        } else if (snapshot.hasError || !snapshot.hasData) {
-          return _noDataWidget();
-        }
+  Widget _buildHeaderCell(String text, {required double width}) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(8.0),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 
-        final teams = (snapshot.data!['league']['teams_ranking'] as List)
-            .cast<Map<String, dynamic>>();
-        if (teams.isEmpty) return _noDataWidget();
+  Widget _buildCell(String text, {required double width}) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(8.0),
+      alignment: Alignment.center,
+      child: Text(text),
+    );
+  }
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: DataTable(
-                  columnSpacing: 12,
-                  headingRowHeight: 40,
-                  dataRowHeight: 36,
-                  headingTextStyle: const TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+  Widget buildStandingsTab(Map<String, dynamic> data) {
+    // 1. If we fetched “champion groups” directly (fallback), response has “groups” at top‐level
+    if (data.containsKey('groups')) {
+      final groupsMap =
+      Map<String, dynamic>.from(data['groups'] as Map);
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupsMap.entries.map((groupEntry) {
+            final groupName = groupEntry.key;
+            final teams = groupEntry.value as List<dynamic>;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Group title
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    groupName,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  dataTextStyle: const TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 12,
-                  ),
-                  headingRowColor: MaterialStateProperty.all(Color(0xFF3F51B5)),
-                  columns: const [
-                    DataColumn(label: Text('#')),
-                    DataColumn(label: Text('الفريق')),
-                    DataColumn(label: Text('لعب')),
-                    DataColumn(label: Text('فوز')),
-                    DataColumn(label: Text('تعادل')),
-                    DataColumn(label: Text('خسارة')),
-                    DataColumn(label: Text('أهداف')),
-                    DataColumn(label: Text('فرق')),
-                    DataColumn(label: Text('نقاط')),
-                  ],
-                  rows: teams.map((t) {
-                    final info = t['team_info'] as Map<String, dynamic>;
-                    final stats = t['stats'] as Map<String, dynamic>;
-                    final pos = t['position'] as int;
-                    final bg = pos <= 3 ? Colors.amber.shade100 : Colors.transparent;
-                    return DataRow(
-                      color: MaterialStateProperty.all(bg),
-                      cells: [
-                        DataCell(Text(pos.toString())),
-                        DataCell(Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (info['image_url'] != null)
-                              Image.network(
-                                'https://api.syria-live.fun/img_proxy?url=${info['image_url']}',
-                                width: 20, height: 20,
-                              ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                info['name'] ?? '',
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                ),
+                // Table header + rows
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const totalFlex = 12;
+                    final unitWidth = constraints.maxWidth / totalFlex;
+                    return Column(
+                      children: [
+                        // Header row
+                        Container(
+                          height: 50,
+                          color: Colors.blueGrey,
+                          child: Row(
+                            children: [
+                              _buildHeaderCell('مركز',
+                                  width: unitWidth),
+                              _buildHeaderCell(
+                                  'الفريق', width: unitWidth * 3),
+                              for (var title in [
+                                'لعب',
+                                'فوز',
+                                'تعادل',
+                                'خسارة',
+                                'له',
+                                'عليه',
+                                'فرق',
+                                'نقاط'
+                              ])
+                                _buildHeaderCell(
+                                    title, width: unitWidth),
+                            ],
+                          ),
+                        ),
+                        // Each team row
+                        ...teams.asMap().entries.map((e) {
+                          final idx = e.key;
+                          final item =
+                          e.value as Map<String, dynamic>;
+                          final imgHex =
+                          (item['team_name']?['image'] ?? '')
+                          as String;
+                          final imgUrl =
+                              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
+
+                          return Container(
+                            decoration: BoxDecoration(
+                                border: Border(
+                                    bottom: BorderSide(
+                                        color:
+                                        Colors.grey.shade300))),
+                            child: Row(
+                              children: [
+                                _buildCell('${idx + 1}',
+                                    width: unitWidth),
+                                Container(
+                                  width: unitWidth * 3,
+                                  padding: const EdgeInsets.all(
+                                      8.0),
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () {
+                                      Navigator.push(context,
+                                          MaterialPageRoute(
+                                              builder: (context) {
+                                                return TeamScreen(
+                                                    teamID: item["team_id"]
+                                                        .toString());
+                                              }));
+                                    },
+                                    icon: Row(
+                                      children: [
+                                        CircleAvatar(
+                                            backgroundImage:
+                                            NetworkImage(
+                                                imgUrl),
+                                            radius: 12),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment:
+                                            Alignment.centerLeft,
+                                            child: Text(
+                                              (item['team_name']
+                                              ?['title'] ??
+                                                  '')
+                                              as String,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                for (var key in [
+                                  'play',
+                                  'wins',
+                                  'draw',
+                                  'lose',
+                                  'for',
+                                  'against',
+                                  'diff',
+                                  'points'
+                                ])
+                                  _buildCell(item[key].toString(),
+                                      width: unitWidth),
+                              ],
                             ),
-                          ],
-                        )),
-                        DataCell(Text(stats['matches_played'].toString())),
-                        DataCell(Text(stats['wins'].toString())),
-                        DataCell(Text(stats['draws'].toString())),
-                        DataCell(Text(stats['losses'].toString())),
-                        DataCell(Text(stats['goals_for'].toString())),
-                        DataCell(Text(stats['goal_difference'].toString())),
-                        DataCell(Text(stats['points'].toString())),
+                          );
+                        }).toList(),
+                        const SizedBox(height: 24),
                       ],
                     );
-                  }).toList(),
+                  },
                 ),
-              ),
+              ],
             );
-          },
+          }).toList(),
+        ),
+      );
+    }
+
+    // 2. Cup standing UI (if payload has “standings” key)
+    if (data.containsKey('standings')) {
+      final standings =
+      data['standings'] as Map<String, dynamic>;
+      final groupsMap =
+      Map<String, dynamic>.from(standings['groups'] as Map);
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: groupsMap.entries.map((groupEntry) {
+            final groupName = groupEntry.key;
+            final teams = groupEntry.value as List<dynamic>;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    groupName,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const totalFlex = 12;
+                    final unitWidth = constraints.maxWidth / totalFlex;
+                    return Column(
+                      children: [
+                        Container(
+                          height: 50,
+                          color: Colors.blueGrey,
+                          child: Row(
+                            children: [
+                              _buildHeaderCell('مركز',
+                                  width: unitWidth),
+                              _buildHeaderCell(
+                                  'الفريق', width: unitWidth * 3),
+                              for (var title in [
+                                'لعب',
+                                'فوز',
+                                'تعادل',
+                                'خسارة',
+                                'له',
+                                'عليه',
+                                'فرق',
+                                'نقاط'
+                              ])
+                                _buildHeaderCell(
+                                    title, width: unitWidth),
+                            ],
+                          ),
+                        ),
+                        ...teams.asMap().entries.map((e) {
+                          final idx = e.key;
+                          final item =
+                          e.value as Map<String, dynamic>;
+                          final imgHex = (item['team_name']
+                          ?['image'] ??
+                              item['teamA']?['image'])
+                          as String;
+                          final imgUrl =
+                              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
+
+                          return Container(
+                            decoration: BoxDecoration(
+                                border: Border(
+                                    bottom: BorderSide(
+                                        color:
+                                        Colors.grey.shade300))),
+                            child: Row(
+                              children: [
+                                _buildCell('${idx + 1}',
+                                    width: unitWidth),
+                                IconButton(
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    Navigator.push(context,
+                                        MaterialPageRoute(
+                                            builder: (context) {
+                                              return TeamScreen(
+                                                  teamID: item["team_id"]
+                                                      .toString());
+                                            }));
+                                  },
+                                  icon: Container(
+                                    width: unitWidth * 3,
+                                    padding:
+                                    const EdgeInsets.all(8.0),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                            backgroundImage:
+                                            NetworkImage(
+                                                imgUrl),
+                                            radius: 12),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment:
+                                            Alignment.centerLeft,
+                                            child: Text(
+                                              (item['team_name']
+                                              ?['title'] ??
+                                                  item['teamA']
+                                                  ?['title'])
+                                              as String,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                for (var key in [
+                                  'play',
+                                  'wins',
+                                  'draw',
+                                  'lose',
+                                  'for',
+                                  'against',
+                                  'diff',
+                                  'points'
+                                ])
+                                  _buildCell(item[key].toString(),
+                                      width: unitWidth),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      );
+    }
+
+    // 3. Champion (league) standing UI
+    final leagueList =
+    List<Map<String, dynamic>>.from(data['league'] as List);
+    leagueList.sort((a, b) {
+      final p1 = a['points'] as int;
+      final p2 = b['points'] as int;
+      if (p2 != p1) return p2.compareTo(p1);
+      final d1 = a['diff'] as int;
+      final d2 = b['diff'] as int;
+      if (d2 != d1) return d2.compareTo(d1);
+      return (b['wins'] as int).compareTo(a['wins'] as int);
+    });
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const totalFlex = 12;
+        final unitWidth = constraints.maxWidth / totalFlex;
+
+        final header = Container(
+          height: 50,
+          color: Colors.blueGrey,
+          child: Row(
+            children: [
+              _buildHeaderCell('مركز', width: unitWidth),
+              _buildHeaderCell('الفريق', width: unitWidth * 3),
+              for (var title in [
+                'لعب',
+                'فوز',
+                'تعادل',
+                'خسارة',
+                'له',
+                'عليه',
+                'فرق',
+                'نقاط'
+              ])
+                _buildHeaderCell(title, width: unitWidth),
+            ],
+          ),
+        );
+
+        final rows = leagueList.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final position = index + 1;
+          final imgHex = item['team_name']['image'] as String;
+          final imgUrl =
+              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
+
+          return Container(
+            decoration: BoxDecoration(
+                border: Border(
+                    bottom:
+                    BorderSide(color: Colors.grey.shade300))),
+            child: Row(
+              children: [
+                _buildCell(position.toString(), width: unitWidth),
+                Container(
+                  width: unitWidth * 3,
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                            return TeamScreen(
+                                teamID: item["team_id"].toString());
+                          }));
+                    },
+                    icon: Row(
+                      children: [
+                        CircleAvatar(
+                            backgroundImage:
+                            NetworkImage(imgUrl),
+                            radius: 12),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(item['team_name']['title']),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                for (var key in [
+                  'play',
+                  'wins',
+                  'draw',
+                  'lose',
+                  'for',
+                  'against',
+                  'diff',
+                  'points'
+                ])
+                  _buildCell(item[key].toString(),
+                      width: unitWidth),
+              ],
+            ),
+          );
+        }).toList();
+
+        return SingleChildScrollView(
+          child: Column(children: [header, ...rows]),
         );
       },
     );
@@ -1486,114 +1861,122 @@ class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: ScrollConfiguration(
-            behavior: MyCustomScrollBehavior(),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 600;
-                final content = FutureBuilder<Map<String, dynamic>>(
-                  future: futureResults,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Scaffold(
-                        appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                        body: Center(child: buildLoadingScreen()),
-                      );
-                    } else if (snapshot.hasError || snapshot.data!.isEmpty ?? true) {
-                      return Scaffold(
-                        appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                        body: const Center(
-                          child: Text("لا توجد بيانات متاحة.", style: TextStyle(color: Colors.red, fontSize: 18)),
-                        ),
-                      );
-                    }
-                    final detailsData = Map<String, dynamic>.from(snapshot.data!);
-                    final details = Map<String, dynamic>.from(detailsData['details']);
-                    final matchInfo = Map<String, dynamic>.from(details['match_info']);
-                    final teams = Map<String, dynamic>.from(details['teams']);
-                    final videos = details['videos'] ?? [];
-                    final statistics = details['statistics'] ?? {};
-                    final lastEncounters = details['last_encounters'] ?? [];
-                    final lastFiveMatches = details['last_five_matches'] ?? {};
-                    final prediction = details['prediction'] ?? {};
+    return ScrollConfiguration(
+      behavior: MyCustomScrollBehavior(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          final content = FutureBuilder<Map<String, dynamic>>(
+            future: futureResults,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
+                  body: Center(child: buildLoadingScreen()),
+                );
+              } else if (snapshot.hasError || snapshot.data!.isEmpty ?? true) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
+                  body: const Center(
+                    child: Text("لا توجد بيانات متاحة.", style: TextStyle(color: Colors.red, fontSize: 18)),
+                  ),
+                );
+              }
+              final detailsData = Map<String, dynamic>.from(snapshot.data!);
+              final details = Map<String, dynamic>.from(detailsData['details']);
+              final matchInfo = Map<String, dynamic>.from(details['match_info']);
+              final teams = Map<String, dynamic>.from(details['teams']);
+              final videos = details['videos'] ?? [];
+              final statistics = details['statistics'] ?? {};
+              final lastEncounters = details['last_encounters'] ?? [];
+              final lastFiveMatches = details['last_five_matches'] ?? {};
+              final prediction = details['prediction'] ?? {};
 
-                    return DefaultTabController(
-                      length: 9,
-                      child: Scaffold(
-                        appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                        body: Column(
-                          children: [
-                            buildTeamHeader(teams, matchInfo),
-                            buildMatchStatusSection(matchInfo),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              child: TabBar(
-                                isScrollable: true,
-                                labelColor: Theme.of(context).colorScheme.onBackground,
-                                unselectedLabelColor: Theme.of(context).disabledColor,
-                                indicatorColor: Theme.of(context).colorScheme.primary,
-                                tabs: const [
-                                  Tab(text: "معلومات المباراة"),
-                                  Tab(text: "الأحداث"),
-                                  Tab(text: "فيديوهات"),
-                                  Tab(text: "الإحصائيات"),
-                                  Tab(text: "التشكيل"),
-                                  Tab(text: "المواجهات السابقة"),
-                                  Tab(text: "الترتيب"),
-                                  Tab(text: "الاخبار"),
-                                  Tab(text: "التوقعات"),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: TabBarView(
-                                children: [
-                                  SingleChildScrollView(
-                                    child: Column(
-                                      children: [
-                                        buildMatchInfoTab(matchInfo),
-                                        buildLastFiveMatchesSection(Map<String, dynamic>.from(lastFiveMatches)),
-                                      ],
-                                    ),
-                                  ),
-                                  buildEventsTab(),
-                                  buildVideosTab(videos),
-                                  buildStatisticsTab(Map<String, dynamic>.from(statistics), teams),
-                                  buildLineupTab(),
-                                  buildPreviousEncountersTab(lastEncounters),
-                                  buildStandingsTab(),
-                                  buildNewsTab(),
-                                  buildPredictionTab(Map<String, dynamic>.from(prediction)),
-                                ],
-                              ),
-                            ),
+              return DefaultTabController(
+                length: 9,
+                child: Scaffold(
+                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
+                  body: Column(
+                    children: [
+                      buildTeamHeader(teams, matchInfo),
+                      buildMatchStatusSection(matchInfo),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: TabBar(
+                          isScrollable: true,
+                          labelColor: Theme.of(context).colorScheme.onBackground,
+                          unselectedLabelColor: Theme.of(context).disabledColor,
+                          indicatorColor: Theme.of(context).colorScheme.primary,
+                          tabs: const [
+                            Tab(text: "معلومات المباراة"),
+                            Tab(text: "الأحداث"),
+                            Tab(text: "فيديوهات"),
+                            Tab(text: "الإحصائيات"),
+                            Tab(text: "التشكيل"),
+                            Tab(text: "المواجهات السابقة"),
+                            Tab(text: "الترتيب"),
+                            Tab(text: "الاخبار"),
+                            Tab(text: "التوقعات"),
                           ],
                         ),
                       ),
-                    );
-                  },
-                );
-                if (isMobile) return content;
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: content,
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  buildMatchInfoTab(matchInfo),
+                                  buildLastFiveMatchesSection(Map<String, dynamic>.from(lastFiveMatches)),
+                                ],
+                              ),
+                            ),
+                            buildEventsTab(),
+                            buildVideosTab(videos),
+                            buildStatisticsTab(Map<String, dynamic>.from(statistics), teams),
+                            buildLineupTab(),
+                            buildPreviousEncountersTab(lastEncounters),
+                            FutureBuilder<Map<String, dynamic>>(
+                              future: futureRanks,
+                              builder: (context, snap) {
+                                if (snap.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                      child:
+                                      CircularProgressIndicator());
+                                }
+                                if (snap.hasError ||
+                                    snap.data == null) {
+                                  return const Center(
+                                    child: Text(
+                                        'خطأ في جلب الترتيب'),
+                                  );
+                                }
+                                return buildStandingsTab(
+                                    snap.data!['data']
+                                    as Map<String, dynamic>);
+                              },
+                            ),
+                            buildNewsTab(),
+                            buildPredictionTab(Map<String, dynamic>.from(prediction)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+              );
+            },
+          );
+          if (isMobile) return content;
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: content,
             ),
-          ),
-        ),
-        if (decodedHtml != null)
-          HtmlWidget(
-            width: MediaQuery.of(context).size.width,
-            height: 100,
-            htmlContent: decodedHtml!,
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 
