@@ -32,7 +32,7 @@ class _NewsScreenState extends State<NewsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
           future: futureResults,
           builder: (context, snapshot) {
@@ -48,7 +48,7 @@ class _NewsScreenState extends State<NewsScreen> {
               var importantNews = newsData['important'] as List;
               var lastTeams = newsData['last_teams'] as List;
               var lastNews = newsData['last_news'] as List;
-
+        
               return SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -63,7 +63,7 @@ class _NewsScreenState extends State<NewsScreen> {
                         padding: EdgeInsets.zero,
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (context){
-                            return NewsDetailsScreen(id: mainNews["id"].toString(), img: "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${mainNews['image']}');
+                            return NewsDetailsScreen(id: mainNews["id"].toString(), img:'https://imgs.ysscores.com/news/820/${mainNews['image']}');
                           }));
                         },
                         icon: Card(
@@ -72,7 +72,7 @@ class _NewsScreenState extends State<NewsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Image.network(
-                                  "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${mainNews['image']}',
+                                   'https://imgs.ysscores.com/news/820/${mainNews['image']}',
                                   errorBuilder: (context, error, stackTrace) {
                                     return const SizedBox(
                                       height: 200,
@@ -117,7 +117,7 @@ class _NewsScreenState extends State<NewsScreen> {
                               onPressed: (){
                                 Navigator.push(context, MaterialPageRoute(builder: (context){
                                   return NewsDetailsScreen(id: item["id"].toString(),
-                                      img: "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${item['image']}');
+                                      img:  'https://imgs.ysscores.com/news/820/${item['image']}');
                                 }));
                               },
                               padding: EdgeInsets.zero,
@@ -130,7 +130,7 @@ class _NewsScreenState extends State<NewsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                      Image.network(
-                                          "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${item['image']}',
+                                           'https://imgs.ysscores.com/news/820/${item['image']}',
                                           errorBuilder: (context, error, stackTrace) {
                                             return const SizedBox(
                                               height: 120,
@@ -186,7 +186,7 @@ class _NewsScreenState extends State<NewsScreen> {
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               child: ListTile(
                                 leading: Image.network(
-                                  "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${item['image']}',
+                                   'https://imgs.ysscores.com/news/820/${item['image']}',
                                   errorBuilder: (context, error, stackTrace) {
                                     return const SizedBox(
                                       height: 50,
@@ -209,7 +209,7 @@ class _NewsScreenState extends State<NewsScreen> {
                             onPressed: (){
                               Navigator.push(context, MaterialPageRoute(builder: (context){
                                 return NewsDetailsScreen(id: item["id"].toString(),
-                                    img: "https://api.syria-live.fun/img_proxy?url=" + 'https://imgs.ysscores.com/news/820/${item['image']}');
+                                    img:  'https://imgs.ysscores.com/news/820/${item['image']}');
                               }));
                             },
                             padding: EdgeInsets.zero,

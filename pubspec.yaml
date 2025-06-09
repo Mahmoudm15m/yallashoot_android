@@ -30,9 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   http:
   shimmer:
-  intl: ^0.19.0
+  intl: ^0.20.2
   url_launcher:
   sticky_headers:
   flutter_html: ^3.0.0

@@ -1,1983 +1,1270 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:intl/intl.dart';
-import 'package:yallashoot/screens/team_screen.dart';
-import '../api/main_api.dart';
-import '../functions/base_functions.dart';
-import '../functions/clock_timer.dart';
-import 'news_details_screen.dart';
+import 'package:flutter/rendering.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../api/main_api.dart';
 
-class _EventCard extends StatelessWidget {
-  final String time, title, videoUrl, playerName, assistName;
+class _TabInfo {
+  final Tab tab;
+  final Widget view;
+  _TabInfo({required this.tab, required this.view});
+}
+
+class _EventDisplayInfo {
   final Icon icon;
-  final Color bgColor;
-  final bool hasVideo, isSub;
-
-  const _EventCard({
-    required this.time,
-    required this.title,
-    required this.icon,
-    required this.bgColor,
-    required this.videoUrl,
-    required this.hasVideo,
-    required this.isSub,
-    required this.playerName,
-    required this.assistName,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: hasVideo
-          ? () => launchUrl(Uri.parse(videoUrl),
-          mode: LaunchMode.externalApplication)
-          : null,
-      child: Container(
-        width: 180,
-        margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /* الصف العلوي */
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(time,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
-                const SizedBox(width: 6),
-                icon,
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontFamily: 'Cairo'),
-                  ),
-                ),
-                if (hasVideo)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4.0),
-                    child: Icon(Icons.play_circle_fill,
-                        size: 18, color: Colors.blue),
-                  ),
-              ],
-            ),
-
-            /* تفاصيل التبديل أو التمريرة الحاسمة */
-            if (isSub) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.logout, size: 16, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text("خروج: ${playerName.isNotEmpty ? playerName : 'غير محدد'}",
-                        style: const TextStyle(fontFamily: 'Cairo'),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.login, size: 16, color: Colors.green),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text("دخول: ${assistName.isNotEmpty ? assistName : 'غير محدد'}",
-                        style: const TextStyle(fontFamily: 'Cairo'),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                ],
-              ),
-            ] else if (assistName.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.assistant_rounded,
-                      size: 16, color: Colors.purple),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text("تمريرة حاسمة: $assistName",
-                        style: const TextStyle(fontFamily: 'Cairo'),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DotOnLine extends StatelessWidget {
-  const _DotOnLine({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(5),
-      ),
-    );
-  }
-}
-
-class MyCustomScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-  };
+  final String title;
+  final Widget? details;
+  _EventDisplayInfo({required this.icon, required this.title, this.details});
 }
 
 class MatchDetails extends StatefulWidget {
   final String id;
   final String leagueId;
+  final String RowId;
+
   const MatchDetails({
     required this.id,
     required this.leagueId,
+    required this.RowId,
     Key? key,
   }) : super(key: key);
 
   @override
-  _MatchDetailsState createState() => _MatchDetailsState();
+  State<MatchDetails> createState() => _MatchDetailsState();
 }
 
-class _MatchDetailsState extends State<MatchDetails> with SingleTickerProviderStateMixin {
+class _MatchDetailsState extends State<MatchDetails> {
   late Future<Map<String, dynamic>> futureResults;
-  late Future<Map<String, dynamic>> futureLineup;
-  late Future<Map<String, dynamic>> futureEvents;
-  late Future<Map<String, dynamic>> futureNews;
-  late Future<Map<String, dynamic>> futureRanks;
-  bool showHomeTeam = true;
-  ApiData yasScore = ApiData();
-  Map<String, dynamic>? adsData;
-  String? decodedHtml;
-
-  String? decodeBase64Ad(String? encoded) {
-    if (encoded == null) return null;
-    try {
-      return utf8.decode(base64.decode(encoded));
-    } catch (_) {
-      return null;
-    }
-  }
-
-
-  Future<Map<String, dynamic>> fetchDetails() async {
-    try {
-      final data = await yasScore.getMatchDetails(widget.id);
-      // تحويل الخريطة الرئيسية إلى Map<String, dynamic>
-      return Map<String, dynamic>.from(data);
-    } catch (e) {
-      return {};
-    }
-  }
+  ApiData apiData = ApiData();
+  bool _showKeyEventsOnly = true;
 
   @override
   void initState() {
     super.initState();
-    fetchAdData();
-    futureResults = fetchDetails();
-    futureLineup = yasScore.getMatchLinesUp(widget.id);
-    futureEvents = yasScore.getMatchEvents(widget.id);
-
-    futureRanks = (() async {
-      try {
-        final champRes = await yasScore
-            .getChampionStanding(widget.leagueId) as Map<String, dynamic>;
-        final leagueList = champRes['data']['league'] as List<dynamic>;
-
-        final onlyColors = leagueList.isNotEmpty &&
-            leagueList.first.keys.length == 1 &&
-            leagueList.first.containsKey('color');
-
-        if (onlyColors) {
-          final cupRes = await yasScore
-              .getCupStanding(widget.leagueId) as Map<String, dynamic>;
-          final standings =
-          cupRes['data']['standings'] as Map<String, dynamic>?;
-          final groups = standings?['groups'] as Map<String, dynamic>?;
-
-          if (groups == null || groups.isEmpty) {
-            final groupsRes = await yasScore
-                .getChampionGroups(widget.leagueId) as Map<String, dynamic>;
-            return groupsRes;
-          }
-
-          return cupRes;
-        }
-
-        return champRes;
-      } catch (_) {
-        final groupsRes = await yasScore
-            .getChampionGroups(widget.leagueId) as Map<String, dynamic>;
-        return groupsRes;
-      }
-    })();
-
-    futureNews = yasScore.getMatchNews(widget.id);
+    futureResults = fetchInfo();
   }
 
-  Future<void> fetchAdData() async {
-    try {
-      final data = await yasScore.getAds();
-      final encoded = data['ads']?['match_details'];
-      setState(() {
-        adsData = data;
-        decodedHtml = decodeBase64Ad(encoded);
-      });
-    } catch (_) {
-      // ممكن تسجل الخطأ لو حبيت
-    }
+  Future<Map<String, dynamic>> fetchInfo() async {
+    final results = await Future.wait([
+      apiData.getMatchDetails(widget.id).catchError((e) => {'error': e}),
+      apiData.getMatchEvents(widget.id).catchError((e) => {'error': e}),
+    ]);
+    return {'details': results[0], 'events': results[1]};
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  bool _isMatchLive(Map<String, dynamic>? detailsData) {
+    final status = detailsData?['status']?.toString();
+    return status == '1' || status == '2' || status == '3';
   }
 
-  String formatDuration(Duration duration) {
-    if (duration.isNegative) return "00:00:00";
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = twoDigits(duration.inHours);
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
-  }
-
-  DateTime parseMatchDateTime(String datetimeStr) {
-    try {
-      final format = DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
-      return format.parseUtc(datetimeStr).toLocal();
-    } catch (e) {
-      return DateTime.now();
-    }
-  }
-
-  Widget buildLoadingScreen() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[400]!,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
-
-  Widget buildTeamHeader(Map<String, dynamic> teams, Map<String, dynamic> matchInfo) {
-    final homeTeam = Map<String, dynamic>.from(teams['home']);
-    final awayTeam = Map<String, dynamic>.from(teams['away']);
-    String homeScore = "";
-    String awayScore = "";
-    if (matchInfo.containsKey('score') && matchInfo['score'] is Map) {
-      final score = Map<String, dynamic>.from(matchInfo['score']);
-      homeScore = score['home'] ?? "";
-      awayScore = score['away'] ?? "";
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            children: [
-              if (homeTeam['logo'] != null)
-                Image.network(
-                  "https://api.syria-live.fun/img_proxy?url=" + homeTeam['logo'],
-                  width: 80,
-                  height: 80,
-                ),
-              const SizedBox(height: 8),
-              Text(
-                homeTeam['name'] ?? '',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (homeScore.isNotEmpty)
-                Text(
-                  homeScore,
-                  style: const TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-                ),
-            ],
-          ),
-          const Icon(Icons.sports_soccer, size: 40, color: Colors.grey),
-          Column(
-            children: [
-              if (awayTeam['logo'] != null)
-                Image.network(
-                  "https://api.syria-live.fun/img_proxy?url=" + awayTeam['logo'],
-                  width: 80,
-                  height: 80,
-                ),
-              const SizedBox(height: 8),
-              Text(
-                awayTeam['name'] ?? '',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (awayScore.isNotEmpty)
-                Text(
-                  awayScore,
-                  style: const TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildMatchStatusSection(Map<String, dynamic> matchInfo) {
-    final String datetimeStr = matchInfo['datetime'] ?? "";
-    final String statusStr = matchInfo['status'] ?? "";
-    return CountdownTimer(
-      datetimeStr: datetimeStr,
-      statusStr: statusStr,
-    );
-  }
-
-  Widget buildMatchInfoTab(Map<String, dynamic> info) {
-    Widget infoCard({required IconData icon, required String label, required String value}) {
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 3,
-        child: ListTile(
-          leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-          title: Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Cairo',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          subtitle: Text(
-            value,
-            style: const TextStyle(fontFamily: 'Cairo'),
-          ),
-        ),
-      );
-    }
-
-
-    Widget channelsCard() {
-      final channels = info['channels'];
-      if (channels == null || channels.isEmpty) return Container();
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "القنوات",
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Divider(),
-              ...channels.map<Widget>((channel) {
-                final channelMap = Map<String, dynamic>.from(channel);
-                final commentator = channelMap['commentator'] is Map
-                    ? Map<String, dynamic>.from(channelMap['commentator'])
-                    : {};
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.tv, color: Colors.green, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              channelMap['name'] ?? "",
-                              style: const TextStyle(
-                                fontFamily: 'Cairo',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              commentator['name'] ?? "",
-                              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ),
-      );
-    }
-    Widget refereesCard() {
-      final referees = info['referees'];
-      if (referees == null || referees.isEmpty) return Container();
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "الحكام",
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Divider(),
-              ...referees.map<Widget>((referee) {
-                final refereeMap = Map<String, dynamic>.from(referee);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.gavel, color: Colors.brown, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              refereeMap['name'] ?? "",
-                              style: const TextStyle(
-                                fontFamily: 'Cairo',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              refereeMap['role'] ?? "",
-                              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          infoCard(
-            icon: Icons.access_time,
-            label: "الوقت",
-            value: formatTime(info['time']),
-          ),
-          infoCard(
-            icon: Icons.calendar_today,
-            label: "التاريخ",
-            value: info['date'],
-          ),
-          infoCard(
-            icon: Icons.emoji_events,
-            label: "الدوري",
-            value: info['tournament']['name'],
-          ),
-          infoCard(
-            icon: Icons.format_list_numbered,
-            label: "الجولة",
-            value: info['round']?? "ودي",
-          ),
-          infoCard(
-            icon: Icons.stadium,
-            label: "الملعب",
-            value: info['stadium']?['name'] ?? "",
-          ),
-          channelsCard(),
-          refereesCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget buildLastFiveMatchesCircles(String teamLabel, List matches) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(teamLabel,
-            style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Row(
-          children: matches.map<Widget>((match) {
-            Color circleColor;
-            String txt ;
-            String result = (match['result'] ?? '').toString().toLowerCase();
-            if (result == 'win') {
-              circleColor = Colors.green;
-              txt = "ف";
-            } else if (result == 'loss') {
-              circleColor = Colors.red;
-              txt = "خ";
-            } else if (result == 'draw') {
-              circleColor = Colors.grey;
-              txt = "ع";
-            } else {
-              circleColor = Colors.black;
-              txt = "؟";
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: CircleAvatar(
-                radius: 12,
-                backgroundColor: circleColor,
-                child: Text(txt),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget buildLastFiveMatchesSection(Map<String, dynamic> lastFiveMatches) {
-    List homeMatches = lastFiveMatches['home'] ?? [];
-    List awayMatches = lastFiveMatches['away'] ?? [];
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (homeMatches.isNotEmpty)
-            buildLastFiveMatchesCircles("آخر خمس مباريات (المضيف)", homeMatches),
-          if (awayMatches.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            buildLastFiveMatchesCircles("آخر خمس مباريات (الضيف)", awayMatches),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget buildVideosTab(List videos) {
-    if (videos.isEmpty) {
-      return const Center(
-        child: Text(
-          "لا توجد فيديوهات.",
-          style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: videos.length,
-      itemBuilder: (context, index) {
-        final video = Map<String, dynamic>.from(videos[index]);
-        final videoUrl = video['url']?.toString() ?? "";
-        final title = video['title']?.toString() ?? "فيديو بدون عنوان";
-        final type = video['type']?.toString() ?? "";
-
-        if (videoUrl.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              title: Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
-                    child: Text(
-                      videoUrl,
-                      style: TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    type,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-              trailing: Icon(Icons.play_circle_fill, color: Colors.blue, size: 30),
-              onTap: () => launchUrl(Uri.parse(videoUrl), mode: LaunchMode.externalApplication),
-            ),
-            const SizedBox(height: 16),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget buildEventsTab() {
-    return FutureBuilder(
-      future: futureEvents,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: buildLoadingScreen());
-        } else if (snapshot.hasError || !snapshot.hasData) {
-          return Center(
-            child: Text("لا توجد احداث حاليا.",
-                style: TextStyle(fontSize: 16, fontFamily: 'Cairo')),
-          );
-        }
-
-        /*───────────────  البيانات  ───────────────*/
-        final data       = snapshot.data ?? {};
-        final matchData  = data["events"]?["data"] as Map<String, dynamic>? ?? {};
-        final eventsList = matchData["events"] as List<dynamic>? ?? [];
-        final homeTeam   = matchData["home_team"] as Map<String, dynamic>? ?? {};
-        final awayTeam   = matchData["away_team"] as Map<String, dynamic>? ?? {};
-
-        /*───────────────  دوال مساعدة  ───────────────*/
-        String getTeamName(int id) =>
-            id == homeTeam["row_id"] ? homeTeam["title"]
-                : id == awayTeam["row_id"] ? awayTeam["title"]
-                : "نظام";
-
-        String getEventTypeDescription(int type, int status) {
-          switch (type) {
-            case 1:  return "⚽ هدف";
-            case 2:  return "🟨 بطاقة صفراء";
-            case 3:  return status == 6 ? "🟥 بطاقة حمراء" : "🟨🟨 بطاقة صفراء ثانية";
-            case 4:  return "🚫 هدف في مرماه";
-            case 5:  return "✅ ضربة جزاء ناجحة";
-            case 6:  return "❌ ضربة جزاء ضائعة";
-            case 7:  return "⛔ هدف ملغي";
-            case 8:  return "🔄 تبديل";
-            case 22: return "🎯 في العارضة";
-            case 100:return "⏱ وقت إضافي/توقف";
-            default: return "📌 حدث";
-          }
-        }
-
-        String getSystemMessage(int minute, int plus) {
-          if (minute == 0)       return "▶ بداية المباراة";
-          else if (minute == 45) return plus == 45 ? "⏩ بداية الشوط الثاني" : "⏸ نهاية الشوط الأول";
-          else if (minute >= 90) return "⏹ نهاية المباراة";
-          return "📢 حدث نظام";
-        }
-
-        String formatEventTime(int minute, int plus, int type) =>
-            type == 100 ? "$minute'"
-                : plus > 0 ? "$minute+$plus'" : "$minute'";
-
-        Icon getEventIcon(int type, String teamName, int status) {
-          if (teamName == "نظام") {
-            return const Icon(Icons.notifications_active, color: Colors.blue);
-          }
-          switch (type) {
-            case 1:  return const Icon(Icons.sports_soccer, color: Colors.green);
-            case 2:  return const Icon(Icons.warning_amber_rounded, color: Colors.yellow);
-            case 3:  return Icon(
-                status == 6 ? Icons.warning_rounded : Icons.warning_amber_rounded,
-                color: status == 6 ? Colors.red : Colors.orange);
-            case 4:  return const Icon(Icons.block, color: Colors.red);
-            case 5:  return const Icon(Icons.check_circle, color: Colors.green);
-            case 6:  return const Icon(Icons.cancel, color: Colors.red);
-            case 7:  return const Icon(Icons.remove_circle, color: Colors.red);
-            case 8:  return const Icon(Icons.swap_horiz, color: Colors.blue);
-            case 22: return const Icon(Icons.close, color: Colors.orange);
-            case 100:return const Icon(Icons.timer, color: Colors.grey);
-            default: return const Icon(Icons.event, color: Colors.blue);
-          }
-        }
-
-        /*────────────────────────  UI  ────────────────────────*/
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return Stack(
-              children: [
-                // الخط الرأسي
-                Positioned.fill(
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Container(width: 2, color: Colors.grey.shade300),
-                  ),
-                ),
-
-                // قائمة الأحداث
-                ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  itemCount: eventsList.length,
-                  itemBuilder: (context, index) {
-                    final event     = eventsList[index] as Map<String, dynamic>;
-                    final timeMin   = event["time_minute"] ?? 0;
-                    final timePlus  = event["time_plus"] ?? 0;
-                    final type      = event["type"] ?? 0;
-                    final status    = event["status"] ?? 0;
-                    final teamId    = event["team_id"] ?? 0;
-                    final teamName  = getTeamName(teamId);
-
-                    /* أسماء اللاعبين */
-                    String playerName = '';
-                    if (event["player_name"] is Map<String, dynamic>) {
-                      playerName = event["player_name"]["title"] ?? '';
-                    }
-                    String assistName = '';
-                    if (event["assist_player_name"] is Map<String, dynamic>) {
-                      assistName = event["assist_player_name"]["title"] ?? '';
-                    }
-
-                    final bool isHome  = teamName == homeTeam["title"];
-                    final bool isAway  = teamName == awayTeam["title"];
-                    final bool isSys   = teamName == "نظام";
-
-                    /* نص الحدث */
-                    String eventTitle = getEventTypeDescription(type, status);
-                    if (isSys) {
-                      eventTitle = getSystemMessage(timeMin, timePlus);
-                    } else if (type == 8) {
-                      eventTitle = "🔄 تبديل";
-                    } else if (playerName.isNotEmpty) {
-                      eventTitle = "$eventTitle - $playerName";
-                    }
-
-                    /* بقية البيانات */
-                    final eventTime = formatEventTime(timeMin, timePlus, type);
-                    final icon      = getEventIcon(type, teamName, status);
-                    final videoUrl  = event["event_video"] as String? ?? '';
-                    final hasVideo  = videoUrl.isNotEmpty;
-
-                    final bgColor = isHome
-                        ? _getTeamColor(homeTeam["title"], homeTeam, awayTeam)
-                        .withOpacity(.12)
-                        : isAway
-                        ? _getTeamColor(awayTeam["title"], homeTeam, awayTeam)
-                        .withOpacity(.12)
-                        : Colors.brown;
-
-                    final card = _EventCard(
-                      time: eventTime,
-                      title: eventTitle,
-                      icon: icon,
-                      bgColor: bgColor,
-                      videoUrl: videoUrl,
-                      hasVideo: hasVideo,
-                      isSub: type == 8,
-                      playerName: playerName,
-                      assistName: assistName,
-                    );
-
-                    /* رسم الحدث */
-                    if (isSys) {
-                      // بطاقة في المنتصف + الخط أسفلها
-                      return Column(
-                        children: [
-                          Transform.translate(
-                            offset: const Offset(0, -4),
-                            child: card,
-                          ),
-                          const _DotOnLine(),
-                        ],
-                      );
-                    }
-
-                    // للفرق: صاحب الأرض يسار – الضيف يمين
-                    return Row(
-                      mainAxisAlignment:
-                      isHome ? MainAxisAlignment.start : MainAxisAlignment.end,
-                      children: isHome
-                          ? [
-                        // يسار: البطاقة تغطي قليلاً الخط
-                        Transform.translate(
-                          offset: const Offset(-8, 0), // تتقدم فوق الخط
-                          child: card,
-                        ),
-                        const _DotOnLine(),
-                      ]
-                          : [
-                        const _DotOnLine(),
-                        Transform.translate(
-                          offset: const Offset(8, 0),
-                          child: card,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Color _getTeamColor(String teamName, Map homeTeam, Map awayTeam) {
-    if (teamName == homeTeam["title"]) return Colors.blue;
-    if (teamName == awayTeam["title"]) return Colors.red;
-    return Colors.grey;
-  }
-
-  Widget buildStatCard(String statLabel, Map<String, dynamic> statData,
-      Map<String, dynamic> teams) {
-    String homeValue = statData['home']
-        ?.toString()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), '') ??
-        "";
-    String awayValue = statData['away']
-        ?.toString()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), '') ??
-        "";
-    String? homeLogo = teams['home']['logo'];
-    String? awayLogo = teams['away']['logo'];
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              children: [
-                if (homeLogo != null)
-                  Image.network("https://api.syria-live.fun/img_proxy?url=" +homeLogo, width: 40, height: 40),
-                const SizedBox(height: 4),
-                Text(homeValue, style: const TextStyle(fontFamily: 'Cairo')),
-              ],
-            ),
-            Text(statLabel,
-                style: const TextStyle(
-                    fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-            Column(
-              children: [
-                if (awayLogo != null)
-                  Image.network("https://api.syria-live.fun/img_proxy?url=" + awayLogo, width: 40, height: 40),
-                const SizedBox(height: 4),
-                Text(awayValue, style: const TextStyle(fontFamily: 'Cairo')),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildStatisticsTab(Map<String, dynamic> statistics, Map<String, dynamic> teams) {
-    List<Widget> statWidgets = [];
-    statistics.forEach((key, value) {
-      if (value is Map) {
-        String label;
-        if (key == 'possession') {
-          label = "الاستحواذ";
-        } else if (key == 'shots') {
-          label = "التسديدات";
-        } else if (key == 'shots_on_target') {
-          label = "التسدسدات علي المرمى";
-        } else if (key == "shots_off_target"){
-          label = "التسديدات خارج المرمى" ;
-        } else if (key == "corners"){
-          label = "الركنيات" ;
-        } else if (key == "blocked_shots"){
-          label = "الكرات المنقذه" ;
-        } else if (key == "offsides"){
-          label = "التسللات" ;
-        } else if (key == "fouls"){
-          label = "الاخطاء" ;
-        } else if (key == "saves"){
-          label = "الانقاذات" ;
-        } else if (key == "yellow_cards"){
-          label = "بطاقات صفراء" ;
-        } else if (key == "yellow_cards"){
-          label = "بطاقات جمراء" ;
-        } else {
-          label = key;
-        }
-        final statMap = Map<String, dynamic>.from(value);
-        statWidgets.add(buildStatCard(label, statMap, teams));
+  Future<void> _launchVideoUrl(String? url, BuildContext context) async {
+    if (url != null && url.isNotEmpty) {
+      final uri = Uri.tryParse(url);
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        statWidgets.add(
-          Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ListTile(
-              title: Text(key,
-                  style: const TextStyle(
-                      fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-              trailing: Text(value.toString().replaceAll(" ", ""),
-                  style: const TextStyle(fontFamily: 'Cairo')),
-            ),
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لا يمكن فتح رابط الفيديو')),
         );
       }
-    });
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: statWidgets,
-    );
-  }
-
-  Widget buildLineupTab() {
-    return FutureBuilder(
-      future: futureLineup,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: buildLoadingScreen());
-        } else if (snapshot.hasError ||
-            !snapshot.hasData ||
-            (snapshot.data as Map).isEmpty) {
-          return const Center(
-              child: Text("لا توجد بيانات التشكيل.",
-                  style: TextStyle(color: Colors.red, fontSize: 18)));
-        }
-
-        final lineupData =
-        Map<String, dynamic>.from((snapshot.data as Map)['lineup']);
-        final matchInfo = Map<String, dynamic>.from(lineupData['match_info']);
-        final String homeTeamId = matchInfo['home_team_id'];
-        final String awayTeamId = matchInfo['away_team_id'];
-        final homeTeamLineup =
-        Map<String, dynamic>.from(lineupData['teams'][homeTeamId] ?? {});
-        final awayTeamLineup =
-        Map<String, dynamic>.from(lineupData['teams'][awayTeamId] ?? {});
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              // عرض بيانات المدربين مع اسم الفريق تحت كل مدرب مع تظليل المدرب المختار
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          showHomeTeam = true;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: showHomeTeam
-                              ? Colors.blue.withOpacity(0.2)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            buildCoachInfo(matchInfo['home_coach']),
-                            const SizedBox(height: 8),
-                            Text(
-                              homeTeamLineup['team_name'] ?? "المضيف",
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          showHomeTeam = false;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: !showHomeTeam
-                              ? Colors.blue.withOpacity(0.2)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            buildCoachInfo(matchInfo['away_coach']),
-                            const SizedBox(height: 8),
-                            Text(
-                              awayTeamLineup['team_name'] ?? "الضيف",
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // عرض تشكيل الفريق المحدد (مع تقليل مساحة الملعب لزيادة تماسك العناصر)
-              Container(
-                height: 600,
-                child: showHomeTeam
-                    ? buildSingleFormationPitch(
-                  teamLineup: homeTeamLineup,
-                  formation: matchInfo['home_formation'] ?? "",
-                  isHome: true,
-                )
-                    : buildSingleFormationPitch(
-                  teamLineup: awayTeamLineup,
-                  formation: matchInfo['away_formation'] ?? "",
-                  isHome: false,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildCoachInfo(dynamic coachData) {
-    if (coachData is Map) {
-      final coach = Map<String, dynamic>.from(coachData);
-      return Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: ListTile(
-          leading: ("https://api.syria-live.fun/img_proxy?url=" + coach['image_url'] != null)
-              ? Image.network("https://api.syria-live.fun/img_proxy?url=" + coach['image_url'], width: 40, height: 40)
-              : null,
-          title: Text("المدرب: ${coach['name']}",
-              style: const TextStyle(
-                  fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
-        ),
-      );
     }
-    return Container();
   }
-
-  Widget buildSingleFormationPitch({
-    required Map<String, dynamic> teamLineup,
-    required String formation,
-    required bool isHome,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double pitchWidth = constraints.maxWidth;
-        final double pitchHeight = constraints.maxHeight;
-        const double topMargin = 10;
-        const double bottomMargin = 10;
-        const double gkHeight = 50;
-
-        List starting = teamLineup['starting_lineup'] ?? [];
-        final goalkeeper = starting.firstWhere(
-              (p) => p['position_group'] == 'G',
-          orElse: () => null,
-        );
-        final List outfield =
-        starting.where((p) => p['position_group'] != 'G').toList();
-        final List<int> formationRows =
-        formation.split('-').map((s) => int.tryParse(s) ?? 0).toList();
-        final int rows = formationRows.isNotEmpty ? formationRows.length : 1;
-
-        // بدء رسم أرض الملعب من بعد الحارس (الذي سيظهر دائماً في الأعلى)
-        final double outfieldStart = topMargin + gkHeight;
-        final double outfieldEnd = pitchHeight - bottomMargin;
-        final double outfieldHeight = outfieldEnd - outfieldStart;
-        final double rowHeight = outfieldHeight / rows;
-
-        List<Widget> playerWidgets = [];
-        int index = 0;
-        for (int i = 0; i < rows; i++) {
-          int count = formationRows[i];
-          if (index + count > outfield.length) {
-            count = outfield.length - index;
-          }
-          final List rowPlayers = outfield.sublist(index, index + count);
-          index += count;
-          final double yPos = outfieldStart + i * rowHeight + rowHeight / 2;
-          playerWidgets.add(Positioned(
-            top: yPos - 25,
-            left: 0,
-            width: pitchWidth,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: rowPlayers.map<Widget>((player) {
-                return Column(
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: ("https://api.syria-live.fun/img_proxy?url=" + player['image_url'] != null)
-                          ? NetworkImage("https://api.syria-live.fun/img_proxy?url=" + player['image_url'])
-                          : null,
-                      radius: 25,
-                      backgroundColor: Colors.white,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      player['name'] ?? "",
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ));
-        }
-
-        if (goalkeeper != null) {
-          playerWidgets.add(Positioned(
-            top: topMargin,
-            left: pitchWidth / 2 - 25,
-            child: Column(
-              children: [
-                CircleAvatar(
-                  backgroundImage: ("https://api.syria-live.fun/img_proxy?url=" + goalkeeper['image_url'] != null)
-                      ? NetworkImage("https://api.syria-live.fun/img_proxy?url=" + goalkeeper['image_url'])
-                      : null,
-                  radius: 25,
-                  backgroundColor: Colors.white,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  goalkeeper['name'] ?? "",
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ],
-            ),
-          ));
-        }
-
-        return Stack(
-          children: [
-            Container(
-              width: pitchWidth,
-              height: pitchHeight,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            ...playerWidgets,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget buildPreviousEncountersTab(List encounters) {
-    if (encounters.isEmpty) {
-      return const Center(
-        child: Text("لا توجد مواجهات سابقة.",
-            style: TextStyle(fontSize: 16, fontFamily: 'Cairo')),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: encounters.length,
-      itemBuilder: (context, index) {
-        final encounter = Map<String, dynamic>.from(encounters[index]);
-        return Card(
-          elevation: 3,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          child: ListTile(
-            leading: const Icon(Icons.sports_soccer, color: Colors.redAccent),
-            title: Text(
-              "${encounter['home_team']} vs ${encounter['away_team']}",
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("النتيجة: ${encounter['score']}",
-                    style: const TextStyle(
-                        fontSize: 16, fontFamily: 'Cairo')),
-                Text("التاريخ: ${encounter['date']}",
-                    style: const TextStyle(
-                        fontSize: 16, fontFamily: 'Cairo')),
-                Text("الدوري: ${encounter['tournament']}",
-                    style: const TextStyle(
-                        fontSize: 16, fontFamily: 'Cairo')),
-              ],
-            ),
-            onTap: () {
-              // تنفيذ عملية عند الضغط على المواجهة
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeaderCell(String text, {required double width}) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(8.0),
-      alignment: Alignment.center,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCell(String text, {required double width}) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(8.0),
-      alignment: Alignment.center,
-      child: Text(text),
-    );
-  }
-
-  Widget buildStandingsTab(Map<String, dynamic> data) {
-    // 1. If we fetched “champion groups” directly (fallback), response has “groups” at top‐level
-    if (data.containsKey('groups')) {
-      final groupsMap =
-      Map<String, dynamic>.from(data['groups'] as Map);
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupsMap.entries.map((groupEntry) {
-            final groupName = groupEntry.key;
-            final teams = groupEntry.value as List<dynamic>;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Group title
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    groupName,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                // Table header + rows
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const totalFlex = 12;
-                    final unitWidth = constraints.maxWidth / totalFlex;
-                    return Column(
-                      children: [
-                        // Header row
-                        Container(
-                          height: 50,
-                          color: Colors.blueGrey,
-                          child: Row(
-                            children: [
-                              _buildHeaderCell('مركز',
-                                  width: unitWidth),
-                              _buildHeaderCell(
-                                  'الفريق', width: unitWidth * 3),
-                              for (var title in [
-                                'لعب',
-                                'فوز',
-                                'تعادل',
-                                'خسارة',
-                                'له',
-                                'عليه',
-                                'فرق',
-                                'نقاط'
-                              ])
-                                _buildHeaderCell(
-                                    title, width: unitWidth),
-                            ],
-                          ),
-                        ),
-                        // Each team row
-                        ...teams.asMap().entries.map((e) {
-                          final idx = e.key;
-                          final item =
-                          e.value as Map<String, dynamic>;
-                          final imgHex =
-                          (item['team_name']?['image'] ?? '')
-                          as String;
-                          final imgUrl =
-                              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
-
-                          return Container(
-                            decoration: BoxDecoration(
-                                border: Border(
-                                    bottom: BorderSide(
-                                        color:
-                                        Colors.grey.shade300))),
-                            child: Row(
-                              children: [
-                                _buildCell('${idx + 1}',
-                                    width: unitWidth),
-                                Container(
-                                  width: unitWidth * 3,
-                                  padding: const EdgeInsets.all(
-                                      8.0),
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {
-                                      Navigator.push(context,
-                                          MaterialPageRoute(
-                                              builder: (context) {
-                                                return TeamScreen(
-                                                    teamID: item["team_id"]
-                                                        .toString());
-                                              }));
-                                    },
-                                    icon: Row(
-                                      children: [
-                                        CircleAvatar(
-                                            backgroundImage:
-                                            NetworkImage(
-                                                imgUrl),
-                                            radius: 12),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment:
-                                            Alignment.centerLeft,
-                                            child: Text(
-                                              (item['team_name']
-                                              ?['title'] ??
-                                                  '')
-                                              as String,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                for (var key in [
-                                  'play',
-                                  'wins',
-                                  'draw',
-                                  'lose',
-                                  'for',
-                                  'against',
-                                  'diff',
-                                  'points'
-                                ])
-                                  _buildCell(item[key].toString(),
-                                      width: unitWidth),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      );
-    }
-
-    // 2. Cup standing UI (if payload has “standings” key)
-    if (data.containsKey('standings')) {
-      final standings =
-      data['standings'] as Map<String, dynamic>;
-      final groupsMap =
-      Map<String, dynamic>.from(standings['groups'] as Map);
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: groupsMap.entries.map((groupEntry) {
-            final groupName = groupEntry.key;
-            final teams = groupEntry.value as List<dynamic>;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    groupName,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const totalFlex = 12;
-                    final unitWidth = constraints.maxWidth / totalFlex;
-                    return Column(
-                      children: [
-                        Container(
-                          height: 50,
-                          color: Colors.blueGrey,
-                          child: Row(
-                            children: [
-                              _buildHeaderCell('مركز',
-                                  width: unitWidth),
-                              _buildHeaderCell(
-                                  'الفريق', width: unitWidth * 3),
-                              for (var title in [
-                                'لعب',
-                                'فوز',
-                                'تعادل',
-                                'خسارة',
-                                'له',
-                                'عليه',
-                                'فرق',
-                                'نقاط'
-                              ])
-                                _buildHeaderCell(
-                                    title, width: unitWidth),
-                            ],
-                          ),
-                        ),
-                        ...teams.asMap().entries.map((e) {
-                          final idx = e.key;
-                          final item =
-                          e.value as Map<String, dynamic>;
-                          final imgHex = (item['team_name']
-                          ?['image'] ??
-                              item['teamA']?['image'])
-                          as String;
-                          final imgUrl =
-                              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
-
-                          return Container(
-                            decoration: BoxDecoration(
-                                border: Border(
-                                    bottom: BorderSide(
-                                        color:
-                                        Colors.grey.shade300))),
-                            child: Row(
-                              children: [
-                                _buildCell('${idx + 1}',
-                                    width: unitWidth),
-                                IconButton(
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    Navigator.push(context,
-                                        MaterialPageRoute(
-                                            builder: (context) {
-                                              return TeamScreen(
-                                                  teamID: item["team_id"]
-                                                      .toString());
-                                            }));
-                                  },
-                                  icon: Container(
-                                    width: unitWidth * 3,
-                                    padding:
-                                    const EdgeInsets.all(8.0),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                            backgroundImage:
-                                            NetworkImage(
-                                                imgUrl),
-                                            radius: 12),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment:
-                                            Alignment.centerLeft,
-                                            child: Text(
-                                              (item['team_name']
-                                              ?['title'] ??
-                                                  item['teamA']
-                                                  ?['title'])
-                                              as String,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                for (var key in [
-                                  'play',
-                                  'wins',
-                                  'draw',
-                                  'lose',
-                                  'for',
-                                  'against',
-                                  'diff',
-                                  'points'
-                                ])
-                                  _buildCell(item[key].toString(),
-                                      width: unitWidth),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      );
-    }
-
-    // 3. Champion (league) standing UI
-    final leagueList =
-    List<Map<String, dynamic>>.from(data['league'] as List);
-    leagueList.sort((a, b) {
-      final p1 = a['points'] as int;
-      final p2 = b['points'] as int;
-      if (p2 != p1) return p2.compareTo(p1);
-      final d1 = a['diff'] as int;
-      final d2 = b['diff'] as int;
-      if (d2 != d1) return d2.compareTo(d1);
-      return (b['wins'] as int).compareTo(a['wins'] as int);
-    });
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const totalFlex = 12;
-        final unitWidth = constraints.maxWidth / totalFlex;
-
-        final header = Container(
-          height: 50,
-          color: Colors.blueGrey,
-          child: Row(
-            children: [
-              _buildHeaderCell('مركز', width: unitWidth),
-              _buildHeaderCell('الفريق', width: unitWidth * 3),
-              for (var title in [
-                'لعب',
-                'فوز',
-                'تعادل',
-                'خسارة',
-                'له',
-                'عليه',
-                'فرق',
-                'نقاط'
-              ])
-                _buildHeaderCell(title, width: unitWidth),
-            ],
-          ),
-        );
-
-        final rows = leagueList.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          final position = index + 1;
-          final imgHex = item['team_name']['image'] as String;
-          final imgUrl =
-              'https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/$imgHex';
-
-          return Container(
-            decoration: BoxDecoration(
-                border: Border(
-                    bottom:
-                    BorderSide(color: Colors.grey.shade300))),
-            child: Row(
-              children: [
-                _buildCell(position.toString(), width: unitWidth),
-                Container(
-                  width: unitWidth * 3,
-                  padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                            return TeamScreen(
-                                teamID: item["team_id"].toString());
-                          }));
-                    },
-                    icon: Row(
-                      children: [
-                        CircleAvatar(
-                            backgroundImage:
-                            NetworkImage(imgUrl),
-                            radius: 12),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(item['team_name']['title']),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                for (var key in [
-                  'play',
-                  'wins',
-                  'draw',
-                  'lose',
-                  'for',
-                  'against',
-                  'diff',
-                  'points'
-                ])
-                  _buildCell(item[key].toString(),
-                      width: unitWidth),
-              ],
-            ),
-          );
-        }).toList();
-
-        return SingleChildScrollView(
-          child: Column(children: [header, ...rows]),
-        );
-      },
-    );
-  }
-
-  Widget _noDataWidget() => Center(
-    child: Text(
-      'لا توجد بيانات للترتيب.',
-      style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-    ),
-  );
-
-  Widget buildNewsTab() {
-    return FutureBuilder(
-      future: futureNews,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: buildLoadingScreen());
-        } else if (snapshot.hasError || !snapshot.hasData) {
-          return Center(
-            child: Text(
-              "لا توجد بيانات للترتيب.",
-              style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-            ),
-          );
-        }
-
-        final data = snapshot.data as Map<String, dynamic>;
-        final List<dynamic> news = data['news'];
-
-        if (news.isEmpty) {
-          return Center(
-            child: Text(
-              "لا توجد بيانات.",
-              style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: news.length,
-          padding: EdgeInsets.symmetric(vertical: 10),
-          itemBuilder: (context, index) {
-            final Map<String, dynamic> child = news[index];
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: IconButton(
-                icon: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            child["title"],
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Cairo',
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            child["created_at"],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              fontFamily: 'Cairo',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        child: Image.network(
-                          "https://api.syria-live.fun/img_proxy?url=" + child["image"].toString().replaceAll("/150/", "/820/"),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Divider(height: 20, thickness: 1),
-                  ],
-                ),
-                onPressed: (){
-                  Navigator.push(context, MaterialPageRoute(builder: (context){
-                    return NewsDetailsScreen(id: extractIdFromUrl(child["link"]).toString(),
-                        img: "https://api.syria-live.fun/img_proxy?url=" + child["image"].toString().replaceAll("/150/", "/820/"));
-                  }));
-                },
-                padding: EdgeInsets.zero,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget buildPredictionTab(Map<String, dynamic> prediction) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: const ListTile(
-              title: Text(
-                "توقعات المباراة",
-                style: TextStyle(
-                    fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ListTile(
-              leading: const Icon(Icons.home, color: Colors.blue),
-              title: const Text("فوز الفريق المضيف",
-                  style: TextStyle(fontFamily: 'Cairo')),
-              trailing: Text(
-                  prediction['home'] is Map
-                      ? prediction['home']['text'] ?? ""
-                      : prediction['home'] ?? "",
-                  style: const TextStyle(fontFamily: 'Cairo')),
-            ),
-          ),
-          Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ListTile(
-              leading: const Icon(Icons.remove, color: Colors.orange),
-              title: const Text("تعادل",
-                  style: TextStyle(fontFamily: 'Cairo')),
-              trailing: Text(
-                  prediction['draw'] is Map
-                      ? prediction['draw']['text'] ?? ""
-                      : prediction['draw'] ?? "",
-                  style: const TextStyle(fontFamily: 'Cairo')),
-            ),
-          ),
-          Card(
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ListTile(
-              leading: const Icon(Icons.sports_soccer, color: Colors.red),
-              title: const Text("فوز الفريق الضيف",
-                  style: TextStyle(fontFamily: 'Cairo')),
-              trailing: Text(
-                  prediction['away'] is Map
-                      ? prediction['away']['text'] ?? ""
-                      : prediction['away'] ?? "",
-                  style: const TextStyle(fontFamily: 'Cairo')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    return ScrollConfiguration(
-      behavior: MyCustomScrollBehavior(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 600;
-          final content = FutureBuilder<Map<String, dynamic>>(
-            future: futureResults,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Scaffold(
-                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                  body: Center(child: buildLoadingScreen()),
-                );
-              } else if (snapshot.hasError || snapshot.data!.isEmpty ?? true) {
-                return Scaffold(
-                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                  body: const Center(
-                    child: Text("لا توجد بيانات متاحة.", style: TextStyle(color: Colors.red, fontSize: 18)),
-                  ),
-                );
-              }
-              final detailsData = Map<String, dynamic>.from(snapshot.data!);
-              final details = Map<String, dynamic>.from(detailsData['details']);
-              final matchInfo = Map<String, dynamic>.from(details['match_info']);
-              final teams = Map<String, dynamic>.from(details['teams']);
-              final videos = details['videos'] ?? [];
-              final statistics = details['statistics'] ?? {};
-              final lastEncounters = details['last_encounters'] ?? [];
-              final lastFiveMatches = details['last_five_matches'] ?? {};
-              final prediction = details['prediction'] ?? {};
+    return Scaffold(
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: futureResults,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('حدث خطأ: ${snapshot.error}'));
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text('لا توجد بيانات'));
+          } else {
+            final detailsData = snapshot.data!["details"]?["details"]?["data"];
+            final eventsData = snapshot.data!["events"]?["events"]?["data"];
 
-              return DefaultTabController(
-                length: 9,
-                child: Scaffold(
-                  appBar: AppBar(title: const Text("تفاصيل المباراة")),
-                  body: Column(
-                    children: [
-                      buildTeamHeader(teams, matchInfo),
-                      buildMatchStatusSection(matchInfo),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: TabBar(
-                          isScrollable: true,
-                          labelColor: Theme.of(context).colorScheme.onBackground,
-                          unselectedLabelColor: Theme.of(context).disabledColor,
-                          indicatorColor: Theme.of(context).colorScheme.primary,
-                          tabs: const [
-                            Tab(text: "معلومات المباراة"),
-                            Tab(text: "الأحداث"),
-                            Tab(text: "فيديوهات"),
-                            Tab(text: "الإحصائيات"),
-                            Tab(text: "التشكيل"),
-                            Tab(text: "المواجهات السابقة"),
-                            Tab(text: "الترتيب"),
-                            Tab(text: "الاخبار"),
-                            Tab(text: "التوقعات"),
-                          ],
-                        ),
+            if (detailsData == null) {
+              return const Center(child: Text('لا يمكن عرض تفاصيل المباراة حاليًا'));
+            }
+
+            final tabs = _buildTabs(detailsData, eventsData);
+
+            return DefaultTabController(
+              length: tabs.length,
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverAppBar(
+                      expandedHeight: 240.0,
+                      floating: false,
+                      pinned: true,
+                      backgroundColor: Theme.of(context).primaryColorDark,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: _buildHeader(detailsData),
                       ),
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  buildMatchInfoTab(matchInfo),
-                                  buildLastFiveMatchesSection(Map<String, dynamic>.from(lastFiveMatches)),
-                                ],
-                              ),
-                            ),
-                            buildEventsTab(),
-                            buildVideosTab(videos),
-                            buildStatisticsTab(Map<String, dynamic>.from(statistics), teams),
-                            buildLineupTab(),
-                            buildPreviousEncountersTab(lastEncounters),
-                            FutureBuilder<Map<String, dynamic>>(
-                              future: futureRanks,
-                              builder: (context, snap) {
-                                if (snap.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child:
-                                      CircularProgressIndicator());
-                                }
-                                if (snap.hasError ||
-                                    snap.data == null) {
-                                  return const Center(
-                                    child: Text(
-                                        'خطأ في جلب الترتيب'),
-                                  );
-                                }
-                                return buildStandingsTab(
-                                    snap.data!['data']
-                                    as Map<String, dynamic>);
-                              },
-                            ),
-                            buildNewsTab(),
-                            buildPredictionTab(Map<String, dynamic>.from(prediction)),
-                          ],
+                    ),
+                    if (tabs.isNotEmpty)
+                      SliverPersistentHeader(
+                        delegate: _SliverAppBarDelegate(
+                          TabBar(
+                            isScrollable: tabs.length > 3,
+                            tabAlignment: tabs.length > 3 ? TabAlignment.center : TabAlignment.fill,
+                            tabs: tabs.map((t) => t.tab).toList(),
+                          ),
                         ),
+                        pinned: true,
                       ),
-                    ],
-                  ),
+                  ];
+                },
+                body: tabs.isEmpty
+                    ? const Center(child: Text("لا توجد تفاصيل متوفرة حاليًا"))
+                    : TabBarView(
+                  children: tabs.map((t) => t.view).toList(),
                 ),
-              );
-            },
-          );
-          if (isMobile) return content;
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: content,
-            ),
-          );
+              ),
+            );
+          }
         },
       ),
     );
   }
 
+  Widget _buildHeader(Map<String, dynamic> data) {
+    final homeTeam = data["home_team"];
+    final awayTeam = data["away_team"];
+    final championship = data["championship"];
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).primaryColor.withOpacity(0.8),
+            Theme.of(context).primaryColorDark.withOpacity(0.9),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: kToolbarHeight / 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.network(
+                "https://imgs.ysscores.com/championship/64/${championship?['image']}",
+                width: 20,
+                height: 20,
+                color: Colors.white70,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                championship?['title'] ?? '',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildTeamDisplay(homeTeam, color: Colors.white),
+              _buildScoreAndTimeDisplay(data),
+              _buildTeamDisplay(awayTeam, color: Colors.white),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamDisplay(Map<String, dynamic>? team, {Color color = Colors.black}) {
+    if (team == null) return const Expanded(child: SizedBox.shrink());
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.network(
+            "https://imgs.ysscores.com/teams/64/${team['image']}",
+            width: 60,
+            height: 60,
+            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 60, color: color.withOpacity(0.7)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            team['title'] ?? 'فريق غير محدد',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreAndTimeDisplay(Map<String, dynamic> data) {
+    final status = data['status']?.toString() ?? '0';
+    String statusText;
+    bool isLive = _isMatchLive(data);
+
+    switch (status) {
+      case '1': case '3':
+      statusText = 'مباشر'; break;
+      case '2':
+        statusText = 'استراحة'; break;
+      case '4': case '11':
+      statusText = 'انتهت'; break;
+      default:
+        statusText = 'لم تبدأ';
+    }
+
+    return Column(
+      children: [
+        Text(
+          '${data['home_scores'] ?? '?'} - ${data['away_scores'] ?? '?'}',
+          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2.0),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if(isLive)
+                Container(
+                  width: 8, height: 8,
+                  margin: const EdgeInsets.only(left: 6),
+                  decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                ),
+              Text(statusText, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<_TabInfo> _buildTabs(Map<String, dynamic> detailsData, Map<String, dynamic>? eventsData) {
+    final List<_TabInfo> tabs = [];
+
+    final eventsList = eventsData?['events'] as List?;
+    final hasEvents = eventsData != null && eventsList != null && eventsList.isNotEmpty;
+    final stats = detailsData['statics_match'] as Map<String, dynamic>?;
+    final hasStats = stats != null && stats.isNotEmpty;
+
+    if (hasEvents || hasStats) {
+      tabs.add(_TabInfo(
+        tab: const Tab(text: 'ملخص المباراة'),
+        view: _buildSummaryTabView(detailsData, eventsData),
+      ));
+    }
+
+    tabs.add(_TabInfo(
+      tab: const Tab(text: 'التفاصيل'),
+      view: _buildDetailsTab(detailsData),
+    ));
+
+    tabs.add(_TabInfo(
+      tab: const Tab(text: 'التشكيل'),
+      view: _LineupTabView(matchId: widget.id, detailsData: detailsData),
+    ));
+
+
+
+    final playedResult = detailsData['played_result'] as Map<String, dynamic>?;
+    final hasPlayedResult = playedResult != null && (playedResult['home'] as Map?)?.isNotEmpty == true;
+    if (hasPlayedResult) {
+      tabs.add(_TabInfo(
+        tab: const Tab(text: 'المواجهات'),
+        view: _buildRecentMatchesTab(playedResult),
+      ));
+    }
+
+    tabs.add(_TabInfo(
+      tab: const Tab(text: 'الأخبار'),
+      view: _NewsTabView(matchRowId: widget.RowId),
+    ));
+
+    return tabs;
+  }
+
+  Widget _buildSummaryTabView(Map<String, dynamic> detailsData, Map<String, dynamic>? eventsData) {
+    final eventsList = eventsData?['events'] as List?;
+    final hasEvents = eventsData != null && eventsList != null && eventsList.isNotEmpty;
+
+    final stats = detailsData['statics_match'] as Map<String, dynamic>?;
+    final hasStats = stats != null && stats.isNotEmpty;
+
+    if (!hasEvents && !hasStats) {
+      return const Center(
+        child: Text("لا يوجد ملخص متوفر لهذه المباراة بعد."),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasEvents) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("أحداث المباراة", style: Theme.of(context).textTheme.titleLarge),
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold)
+                  ),
+                  child: Text(_showKeyEventsOnly ? "عرض الكل" : "الأبرز فقط"),
+                  onPressed: () {
+                    setState(() => _showKeyEventsOnly = !_showKeyEventsOnly);
+                  },
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildFullEventsView(eventsData, detailsData["home_team"]?["row_id"],
+              isKeyEventsOnly: _showKeyEventsOnly,
+            ),
+          ],
+
+          if (hasEvents && hasStats)
+            const Divider(height: 40, thickness: 1),
+
+          if (hasStats) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text("الإحصائيات", style: Theme.of(context).textTheme.titleLarge),
+            ),
+            _buildStatsTab(stats, detailsData['home_team'], detailsData['away_team'], isNested: true),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullEventsView(Map<String, dynamic>? eventsData, int? homeTeamId, {bool isKeyEventsOnly = false}) {
+    final eventsListFull = (eventsData?["events"] as List<dynamic>? ?? []).reversed.toList();
+
+    final eventsList = isKeyEventsOnly
+        ? eventsListFull.where((e) => e['type'] == 1 || e['type'] == 3 || e['type'] == 22).toList()
+        : eventsListFull;
+
+    if (eventsList.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40.0),
+        child: Center(child: Text("لا توجد أحداث بارزة بعد.")),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      itemCount: eventsList.length,
+      itemBuilder: (context, index) {
+        final event = eventsList[index];
+        final isHomeEvent = event['team_id'] == homeTeamId;
+        final isSystemEvent = event['team_id'] == 0;
+
+        if (isSystemEvent) {
+          return _SystemEventChip(event: event);
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: isHomeEvent ? _EventTimelineCard(event: event) : const SizedBox()),
+            _TimeIndicatorCircle(event: event),
+            Expanded(child: !isHomeEvent ? _EventTimelineCard(event: event, isHomeEvent: false) : const SizedBox()),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailsTab(Map<String, dynamic> data) {
+    final channels = data['channel_commm'] as List<dynamic>? ?? [];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        children: [
+          Card(
+            elevation: 2,
+            margin: const EdgeInsets.all(0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text("معلومات المباراة", style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  const Divider(),
+                  _buildInfoTile(Icons.calendar_today_outlined, 'التاريخ', data['match_date']),
+                  _buildInfoTile(Icons.sports_soccer_outlined, 'البطولة', data['championship']?['title']),
+                  _buildInfoTile(Icons.stadium_outlined, 'الملعب', data['Stadium']),
+                  _buildInfoTile(Icons.flag_outlined, 'الجولة', data['round']),
+                ],
+              ),
+            ),
+          ),
+          if (channels.isNotEmpty) const SizedBox(height: 16),
+          if (channels.isNotEmpty)
+            Card(
+              elevation: 2,
+              margin: const EdgeInsets.all(0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text("القنوات الناقلة", style: Theme.of(context).textTheme.titleLarge),
+                    ),
+                    const Divider(),
+                    ...channels.map((ch) => _buildInfoTile(
+                      Icons.tv_outlined,
+                      ch['channel_name'] ?? 'قناة غير محددة',
+                      ch['commentator_name'],
+                    )).toList(),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentMatchesTab(Map<String, dynamic> playedResult) {
+    final homeMatches = (playedResult['home'] as Map?)?.values.toList() ?? [];
+    final awayMatches = (playedResult['away'] as Map?)?.values.toList() ?? [];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildTeamRecentMatches(homeMatches.first['home']?['title'], homeMatches)),
+          const SizedBox(width: 16),
+          Expanded(child: _buildTeamRecentMatches(awayMatches.first['away']?['title'], awayMatches)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsTab(Map<String, dynamic> stats, Map<String, dynamic>? homeTeam, Map<String, dynamic>? awayTeam, {bool isNested = false}) {
+    final homeStats = stats[homeTeam?['row_id']?.toString()];
+    final awayStats = stats[awayTeam?['row_id']?.toString()];
+
+    if (homeStats == null || awayStats == null) {
+      return const Center(child: Text('لا توجد إحصائيات'));
+    }
+
+    final content = Column(
+      children: [
+        _buildStatRow('الاستحواذ', homeStats['ball_possession'], awayStats['ball_possession'], isPercentage: true),
+        _buildStatRow('التسديدات', homeStats['total_shots'], awayStats['total_shots']),
+        _buildStatRow('الأخطاء', homeStats['fouls'], awayStats['fouls']),
+        _buildStatRow('التسلل', homeStats['offsides'], awayStats['offsides']),
+      ],
+    );
+
+    if (isNested) {
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(padding: const EdgeInsets.all(16.0), child: content),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [content],
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String title, String? value) {
+    if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).primaryColor),
+      title: Text(title),
+      subtitle: Text(value, style: Theme.of(context).textTheme.bodyLarge),
+      dense: true,
+    );
+  }
+
+  Widget _buildTeamRecentMatches(String? teamName, List<dynamic> matches) {
+    Color getResultColor(String? winType) {
+      switch (winType) {
+        case 'win': return Colors.green.shade700;
+        case 'lose': return Colors.red.shade700;
+        case 'equal': return Colors.orange.shade700;
+        default: return Colors.grey;
+      }
+    }
+
+    String getResultLetter(String? winType) {
+      switch (winType) {
+        case 'win': return 'ف';
+        case 'lose': return 'خ';
+        case 'equal': return 'ت';
+        default: return '-';
+      }
+    }
+
+    return Column(
+      children: [
+        Text(teamName ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...matches.map((match) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${match['home']?['title'] ?? ''} ${match['home_scores'] ?? ''}-${match['away_scores'] ?? ''} ${match['away']?['title'] ?? ''}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  Container(
+                    width: 24, height: 24,
+                    decoration: BoxDecoration(color: getResultColor(match['win_type']), borderRadius: BorderRadius.circular(4)),
+                    child: Center(child: Text(getResultLetter(match['win_type']), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildStatRow(String title, dynamic homeValue, dynamic awayValue, {bool isPercentage = false}) {
+    final hVal = int.tryParse(homeValue.toString()) ?? 0;
+    final aVal = int.tryParse(awayValue.toString()) ?? 0;
+    final total = isPercentage ? 100 : (hVal + aVal == 0 ? 1 : hVal + aVal);
+    final homeFlex = (hVal / total * 100);
+    final awayFlex = (aVal / total * 100);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(hVal.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(title, style: TextStyle(color: Theme.of(context).hintColor)),
+              Text(aVal.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            child: Row(
+              children: [
+                Expanded(flex: homeFlex.toInt(), child: Container(height: 10, color: Theme.of(context).primaryColor)),
+                Expanded(flex: awayFlex.toInt(), child: Container(height: 10, color: Colors.grey.shade300)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class _SystemEventChip extends StatelessWidget {
+  final Map<String, dynamic> event;
+  const _SystemEventChip({Key? key, required this.event}) : super(key: key);
+
+  String getEventTitle() {
+    if (event['type'] == 13) return "▶ بداية المباراة";
+    if (event['type'] == 5) return "⏸ نهاية الشوط الأول";
+    if (event['type'] == 6) return "⏩ بداية الشوط الثاني";
+    if (event['type'] == 7) return "⏹ نهاية المباراة";
+    return "";
+  }
+
+  IconData getEventIcon() {
+    if (event['type'] == 13) return Icons.play_arrow;
+    if (event['type'] == 5) return Icons.pause;
+    if (event['type'] == 6) return Icons.play_arrow;
+    if (event['type'] == 7) return Icons.stop;
+    return Icons.info;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = getEventTitle();
+    if(title.isEmpty) return const SizedBox.shrink();
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Chip(
+          avatar: Icon(getEventIcon(), size: 16, color: Theme.of(context).textTheme.bodySmall?.color),
+          label: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeIndicatorCircle extends StatelessWidget {
+  final Map<String, dynamic> event;
+  const _TimeIndicatorCircle({Key? key, required this.event}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final timeMin = event["time_minute"] ?? 0;
+    final timePlus = event["time_plus"] ?? 0;
+    final timeStr = timePlus > 0 ? "$timeMin'..": "$timeMin'";
+
+    final bool isImportantEvent = event['type'] == 1 || event['type'] == 3;
+    final bgColor = isImportantEvent ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.grey.shade200;
+    final textColor = isImportantEvent ? Theme.of(context).primaryColorDark : Theme.of(context).textTheme.bodySmall?.color;
+
+    return Container(
+      width: 42,
+      height: 42,
+      margin: const EdgeInsets.symmetric(horizontal: 6.0),
+      decoration: BoxDecoration(
+          color: bgColor,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300, width: 0.5)
+      ),
+      child: Center(
+        child: Text(
+          timeStr,
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: textColor,
+              fontSize: 11
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EventTimelineCard extends StatelessWidget {
+  final Map<String, dynamic> event;
+  final bool isHomeEvent;
+  const _EventTimelineCard({required this.event, this.isHomeEvent = true});
+
+  Future<void> _launchVideoUrl(String? url, BuildContext context) async {
+    final state = context.findAncestorStateOfType<_MatchDetailsState>();
+    await state?._launchVideoUrl(url, context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = event["type"] ?? 0;
+    final player = event["player_name"]?["title"] as String?;
+    final assist = event["assist_player_name"]?["title"] as String?;
+    final videoUrl = event["event_video"] as String?;
+    final hasVideo = videoUrl != null && videoUrl.isNotEmpty;
+    final eventInfo = _getEventInfo(context, type, player, assist, isHomeEvent);
+
+    final bool isGoal = type == 1;
+
+    final content = Row(
+      mainAxisAlignment: isHomeEvent ? MainAxisAlignment.start : MainAxisAlignment.end,
+      children: [
+        if(isHomeEvent) eventInfo.icon,
+        if(isHomeEvent) const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: isHomeEvent ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                  eventInfo.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  textAlign: isHomeEvent ? TextAlign.start : TextAlign.end
+              ),
+              if (player != null)
+                Text(
+                    player,
+                    style: const TextStyle(fontSize: 12),
+                    textAlign: isHomeEvent ? TextAlign.start : TextAlign.end
+                ),
+              if (eventInfo.details != null) const SizedBox(height: 2),
+              if (eventInfo.details != null) eventInfo.details!,
+            ],
+          ),
+        ),
+        if(!isHomeEvent) const SizedBox(width: 8),
+        if(!isHomeEvent) eventInfo.icon,
+      ],
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(8),
+          border: isGoal ? Border.all(color: Colors.green.withOpacity(0.4), width: 1) : null,
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1))]
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: () => _launchVideoUrl(videoUrl, context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                content,
+                if(hasVideo)
+                  Positioned(
+                      bottom: -2,
+                      left: isHomeEvent ? -2 : null,
+                      right: !isHomeEvent ? -2 : null,
+                      child: Icon(Icons.play_circle_filled_rounded, color: Theme.of(context).primaryColor, size: 16)
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+  final TabBar _tabBar;
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: Theme.of(context).scaffoldBackgroundColor, child: Center(child: _tabBar));
+  }
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+}
+
+_EventDisplayInfo _getEventInfo(BuildContext context, int type, String? player, String? assist, bool isHomeEvent) {
+  switch (type) {
+    case 1:
+      return _EventDisplayInfo(
+          icon: const Icon(Icons.sports_soccer, color: Colors.green, size: 18),
+          title: "هدف",
+          details: assist != null ? Text("صنع الهدف: $assist", style: TextStyle(color: Theme.of(context).hintColor, fontSize: 11)) : null);
+    case 3:
+      return _EventDisplayInfo(icon: const Icon(Icons.style, color: Colors.red, size: 18), title: "بطاقة حمراء", details: null);
+    case 2:
+      return _EventDisplayInfo(icon: const Icon(Icons.style, color: Colors.amber, size: 18), title: "بطاقة صفراء", details: null);
+    case 8:
+      return _EventDisplayInfo(
+          icon: const Icon(Icons.swap_horiz_rounded, color: Colors.blue, size: 18),
+          title: "تبديل",
+          details: RichText(
+              textDirection: isHomeEvent ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: isHomeEvent ? TextAlign.start : TextAlign.end,
+              text: TextSpan(
+                style: DefaultTextStyle.of(context).style.copyWith(fontSize: 11),
+                children: [
+                  TextSpan(text: 'دخول: ', style: TextStyle(color: Colors.green.shade700)),
+                  TextSpan(text: '$player ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(text: 'خروج: ', style: TextStyle(color: Colors.red.shade700)),
+                  TextSpan(text: '$assist', style: TextStyle(color: Theme.of(context).hintColor, decoration: TextDecoration.lineThrough)),
+                ],
+              )));
+    case 22:
+      return _EventDisplayInfo(icon: Icon(Icons.radio_button_checked, color: Theme.of(context).colorScheme.secondary, size: 18), title: "ركلة جزاء", details: null);
+    case 23:
+      return _EventDisplayInfo(icon: Icon(Icons.cancel_outlined, color: Theme.of(context).colorScheme.error, size: 18), title: "ركلة جزاء ضائعة", details: null);
+    default:
+      return _EventDisplayInfo(icon: Icon(Icons.info_outline, color: Theme.of(context).hintColor, size: 18), title: "حدث", details: null);
+  }
+}
+
+class _LineupTabView extends StatefulWidget {
+  final String matchId;
+  final Map<String, dynamic> detailsData;
+
+  const _LineupTabView({required this.matchId, required this.detailsData});
+
+  @override
+  State<_LineupTabView> createState() => _LineupTabViewState();
+}
+
+class _LineupTabViewState extends State<_LineupTabView> {
+  late Future<Map<String, dynamic>> _lineupFuture;
+  final ApiData apiData = ApiData();
+
+  @override
+  void initState() {
+    super.initState();
+    _lineupFuture = apiData.getMatchLinesUp(widget.matchId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _lineupFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data?['lineup']?['data']?['lineup'] == null) {
+          return const Center(child: Text('التشكيل غير متوفر حاليًا.'));
+        }
+
+        final lineupData = snapshot.data!['lineup']['data'];
+        final homeTeamId = widget.detailsData['home_team']['row_id'].toString();
+        final awayTeamId = widget.detailsData['away_team']['row_id'].toString();
+
+        final homeLineup = lineupData['lineup'][homeTeamId];
+        final awayLineup = lineupData['lineup'][awayTeamId];
+
+        return DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              TabBar(
+                tabs: [
+                  Tab(text: widget.detailsData['home_team']['title']),
+                  Tab(text: widget.detailsData['away_team']['title']),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _TeamLineupView(
+                      lineup: homeLineup,
+                      formation: lineupData['0']['home_formation'],
+                      coach: lineupData['0']['home_coach'],
+                    ),
+                    _TeamLineupView(
+                      lineup: awayLineup,
+                      formation: lineupData['0']['away_formation'],
+                      coach: lineupData['0']['away_coach'],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TeamLineupView extends StatelessWidget {
+  final Map<String, dynamic>? lineup;
+  final String? formation;
+  final Map<String, dynamic>? coach;
+
+  const _TeamLineupView({this.lineup, this.formation, this.coach});
+
+  @override
+  Widget build(BuildContext context) {
+    if (lineup == null) {
+      return const Center(child: Text("لا توجد بيانات تشكيل لهذا الفريق."));
+    }
+    final startingPlayers = (lineup!['lineup'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final substitutePlayers = (lineup!['substitutions'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          _FootballPitch(players: startingPlayers, formation: formation),
+          const SizedBox(height: 16),
+          _SectionTitle(title: "المدرب: ${coach?['title'] ?? 'غير محدد'}"),
+          const SizedBox(height: 16),
+          _SectionTitle(title: "دكة البدلاء"),
+          const SizedBox(height: 8),
+          _SubstitutesList(players: substitutePlayers),
+        ],
+      ),
+    );
+  }
+}
+
+class _FootballPitch extends StatelessWidget {
+  final List<Map<String, dynamic>> players;
+  final String? formation;
+
+  const _FootballPitch({required this.players, this.formation});
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 7 / 10,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.green.shade700,
+          border: Border.all(color: Colors.white.withOpacity(0.4)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Stack(
+          children: [
+            const _PitchLines(),
+            _buildPlayerMarkers(players),
+            Positioned(
+              top: 8,
+              left: 0,
+              right: 0,
+              child: Text(
+                "خطة اللعب: ${formation ?? 'غير محددة'}",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerMarkers(List<Map<String, dynamic>> players) {
+    final List<int> formationLines = _parseFormation(formation);
+
+    Map<String, List<Map<String, dynamic>>> groupedPlayers = {
+      'G': [], 'D': [], 'M': [], 'F': []
+    };
+
+    for (var p in players) {
+      final pos = p['position'];
+      if(groupedPlayers.containsKey(pos)) {
+        groupedPlayers[pos]!.add(p);
+      } else if (pos == 'GK') {
+        groupedPlayers['G']!.add(p);
+      }
+    }
+
+    return LayoutBuilder(
+        builder: (context, constraints) {
+          List<Widget> markers = [];
+
+          final positionsY = {'G': 0.1, 'D': 0.3, 'M': 0.55, 'F': 0.8};
+          final lines = ['G', 'D', 'M', 'F'];
+          int formationIndex = 0;
+
+          for(var lineKey in lines) {
+            var linePlayers = groupedPlayers[lineKey]!;
+            int lineLength = lineKey == 'G' ? 1 : (formationLines.isNotEmpty && formationIndex < formationLines.length ? formationLines[formationIndex] : linePlayers.length);
+            if (lineKey != 'G' && formationLines.isNotEmpty) formationIndex++;
+
+            for (int i = 0; i < linePlayers.length; i++) {
+              var player = linePlayers[i];
+              double x = (i + 1) / (lineLength + 1);
+              double y = positionsY[lineKey]!;
+
+              markers.add(
+                  Positioned(
+                    top: y * constraints.maxHeight - 32,
+                    left: x * constraints.maxWidth - 32,
+                    child: _PlayerMarker(player: player),
+                  )
+              );
+            }
+          }
+          return Stack(children: markers);
+        }
+    );
+  }
+
+  List<int> _parseFormation(String? f) {
+    if (f == null) return [];
+    return f.split('-').map((e) => int.tryParse(e) ?? 0).toList();
+  }
+}
+
+class _PitchLines extends StatelessWidget {
+  const _PitchLines();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return Stack(
+        children: [
+          Positioned(
+            top: constraints.maxHeight * 0.5 - 0.5, left: 0, right: 0,
+            child: Container(height: 1, color: Colors.white.withOpacity(0.4)),
+          ),
+          Center(
+            child: Container(
+              width: constraints.maxWidth * 0.25,
+              height: constraints.maxWidth * 0.25,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.4)),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+class _PlayerMarker extends StatelessWidget {
+  final Map<String, dynamic> player;
+  const _PlayerMarker({required this.player});
+
+  @override
+  Widget build(BuildContext context) {
+    final pData = player['player'];
+    final name = pData['title'] as String;
+    final image = pData['image'] as String?;
+
+    return GestureDetector(
+      onTap: () {
+        print("Player ID: ${pData['row_id']}");
+      },
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: image != null ? NetworkImage("https://imgs.ysscores.com/player/150/$image") : null,
+              backgroundColor: Colors.white.withOpacity(0.8),
+              child: image == null
+                  ? const Icon(Icons.person, size: 22, color: Colors.grey)
+                  : null,
+            ),
+            const SizedBox(height: 3),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubstitutesList extends StatelessWidget {
+  final List<Map<String, dynamic>> players;
+  const _SubstitutesList({required this.players});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: players.length,
+        separatorBuilder: (context, index) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final pData = players[index]['player'];
+          final image = pData['image'] as String?;
+          final number = pData['player_number']?.toString();
+
+          return ListTile(
+            dense: true,
+            onTap: () => print("Player ID: ${pData['row_id']}"),
+            leading: CircleAvatar(
+              radius: 18,
+              backgroundImage: image != null ? NetworkImage("https://imgs.ysscores.com/player/150/$image") : null,
+              backgroundColor: Colors.grey.shade200,
+              child: image == null ? const Icon(Icons.person, size: 20, color: Colors.grey) : null,
+            ),
+            title: Text(pData['title'] ?? 'غير معروف'),
+            trailing: number != null
+                ? Text(number, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 16, fontWeight: FontWeight.bold))
+                : null,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+}
+
+class _NewsTabView extends StatefulWidget {
+  final String matchRowId;
+  const _NewsTabView({required this.matchRowId});
+
+  @override
+  State<_NewsTabView> createState() => _NewsTabViewState();
+}
+
+class _NewsTabViewState extends State<_NewsTabView> {
+  late Future<Map<String, dynamic>> _newsFuture;
+  final ApiData apiData = ApiData();
+
+  @override
+  void initState() {
+    super.initState();
+    _newsFuture = apiData.getMatchNews(widget.matchRowId);
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final dateTime = DateTime.parse(dateString);
+      final difference = DateTime.now().difference(dateTime);
+
+      if (difference.inDays > 7) {
+        return "${dateTime.year}/${dateTime.month}/${dateTime.day}";
+      } else if (difference.inDays > 0) {
+        return "منذ ${difference.inDays} يوم${difference.inDays > 1 ? ' أيام' : ''}";
+      } else if (difference.inHours > 0) {
+        return "منذ ${difference.inHours} ساعة${difference.inHours > 1 ? ' ساعات' : ''}";
+      } else if (difference.inMinutes > 0) {
+        return "منذ ${difference.inMinutes} دقيقة${difference.inMinutes > 1 ? ' دقائق' : ''}";
+      } else {
+        return "الآن";
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _newsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Center(child: Text("حدث خطأ أثناء تحميل الأخبار."));
+        }
+
+        final newsData = snapshot.data!['news']?['data']?['data'] as List?;
+        if (newsData == null || newsData.isEmpty) {
+          return const Center(child: Text("لا توجد أخبار متاحة لهذه المباراة."));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(8.0),
+          itemCount: newsData.length,
+          itemBuilder: (context, index) {
+            return _NewsCard(newsItem: newsData[index], formatDate: _formatDate);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _NewsCard extends StatelessWidget {
+  final Map<String, dynamic> newsItem;
+  final String Function(String) formatDate;
+
+  const _NewsCard({required this.newsItem, required this.formatDate});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = newsItem['title'] ?? '';
+    final description = newsItem['news_desc'] ?? '';
+    final imageUrl = newsItem['image'];
+    final date = newsItem['created_at']?['date'] ?? '';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (imageUrl != null)
+            Image.network(
+              "https://imgs.ysscores.com/news/820/$imageUrl",
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const SizedBox(
+                height: 180,
+                child: Center(child: Icon(Icons.image_not_supported)),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatDate(date),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

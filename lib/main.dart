@@ -9,6 +9,7 @@ import 'package:yallashoot/screens/news_screen.dart';
 import 'package:yallashoot/screens/ranks_screen.dart';
 import 'package:yallashoot/screens/settings_screen.dart';
 import 'api/main_api.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -119,8 +120,16 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
-      locale: const Locale('en'),
-      supportedLocales: const [Locale('en'), Locale('ar')],
+      locale: const Locale('ar'),
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(useMaterial3: true),
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -129,6 +138,7 @@ class _MyAppState extends State<MyApp> {
         toggleDarkMode: _toggleDarkMode,
       ),
     );
+
   }
 }
 

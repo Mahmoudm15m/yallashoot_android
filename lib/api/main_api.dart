@@ -6,7 +6,7 @@ Map<String, String> headers = {
 };
 
 class ApiData {
-  final String baseUrl = "https://api.syria-live.fun/api/v2";
+  final String baseUrl = "http://185.224.129.206:5000/api/v2";
 
   Future<Map<String, dynamic>> fetchData(String endpoint) async {
     try {
@@ -24,7 +24,7 @@ class ApiData {
 
   Future<Map<String, dynamic>> fetchUpdateData(String endpoint) async {
     try {
-      final response = await http.get(Uri.parse('https://api.syria-live.fun/$endpoint'));
+      final response = await http.get(Uri.parse('http://185.224.129.206:5000/$endpoint'));
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         return json.decode(decodedBody) as Map<String, dynamic>;
@@ -58,61 +58,61 @@ class ApiData {
     return await fetchData("matches?date=$date");
   }
   Future<dynamic> getChampionStanding(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/champion_standing?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/champion_standing?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getCupStanding(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/cup_standing?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/cup_standing?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getChampionGroups(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/champion_groups?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/champion_groups?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getChampionMatches(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/champion_matches?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/champion_matches?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getChampionScorers(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/champion_scorers?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/champion_scorers?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
 
   Future<dynamic> getChampionAssists(String champion) async {
-    final url = "https://api.syria-live.fun/api/v2/champion_assists?champion=$champion" ;
+    final url = "http://185.224.129.206:5000/api/v2/champion_assists?champion=$champion" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
 
   Future<dynamic> getTeamInfo(String teamId) async {
-    final url = "https://api.syria-live.fun/api/v2/team_info?team_id=$teamId" ;
+    final url = "http://185.224.129.206:5000/api/v2/team_info?team_id=$teamId" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
 
   Future<dynamic> getPlayerInfo(String playerId) async {
-    final url = "https://api.syria-live.fun/api/v2/player_info?player_id=$playerId" ;
+    final url = "http://185.224.129.206:5000/api/v2/player_info?player_id=$playerId" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
 }
   Future<dynamic> getTeamMatches(String teamId) async {
-    final url = "https://api.syria-live.fun/api/v2/team_matches?team_id=$teamId" ;
+    final url = "http://185.224.129.206:5000/api/v2/team_matches?team_id=$teamId" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getSearchResults({String? q}) async {
-    final baseUrl = "https://api.syria-live.fun/api/v2/search";
+    final baseUrl = "http://185.224.129.206:5000/api/v2/search";
     final url = q == null || q.isEmpty ? baseUrl : "$baseUrl?q=$q";
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
   Future<dynamic> getAds() async {
-    final baseUrl = "https://api.syria-live.fun/api/v2/ads";
+    final baseUrl = "http://185.224.129.206:5000/api/v2/ads";
     final response = await http.get(Uri.parse(baseUrl));
     return jsonDecode(response.body);
   }
@@ -127,7 +127,7 @@ class ApiData {
     return await fetchData("matches/$id/events");
   }
   Future<Map<String, dynamic>> getMatchNews(String id) async {
-    return await fetchData("matches/$id/news");
+    return await fetchData("match_news?row_id=$id");
   }
   Future<Map<String, dynamic>> getNewsDetails(String id) async {
     return await fetchData("news_detail/$id");
