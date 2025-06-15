@@ -23,7 +23,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     futurePlayer = api.getPlayerInfo(widget.playerId).then((v) => v as Map<String, dynamic>);
   }
 
-  // ---------- helpers ----------
+
   Widget _infoChip(IconData icon, String label) {
     return Chip(
       avatar: Icon(icon, size: 16),
@@ -33,7 +33,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  // MODIFIED: Made the stat chip theme-aware
+
   Widget _statChip(BuildContext context, String label, dynamic value) {
     final theme = Theme.of(context);
     return Chip(
@@ -41,18 +41,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
         '$label: ${value ?? 0}',
         style: TextStyle(
           fontSize: 12,
-          color: theme.colorScheme.onSecondaryContainer, // Adapts text color
+          color: theme.colorScheme.onSecondaryContainer,
         ),
       ),
       visualDensity: VisualDensity.compact,
-      backgroundColor: theme.colorScheme.secondaryContainer, // Adapts background color
+      backgroundColor: theme.colorScheme.secondaryContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the current theme to use its colors
+
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
@@ -66,7 +66,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           return Scaffold(body: Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!)));
         }
 
-        // ------------- data -------------
+
         final data = snap.data!['data'] as Map<String, dynamic>;
         final cover = data['image_cover'] as String? ?? '';
         final coverUrl =
@@ -91,7 +91,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         final stats = List<Map<String, dynamic>>.from(data['player_statistics'] as List<dynamic>? ?? []);
         final transfers = List<Map<String, dynamic>>.from(data['transfers'] as List<dynamic>? ?? []);
 
-        // ------------ UI ------------
+
         return Scaffold(
           body: NestedScrollView(
             headerSliverBuilder: (context, _) {
@@ -110,7 +110,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // ---- cover image ----
+
                         ClipRRect(
                           borderRadius:
                           const BorderRadius.vertical(bottom: Radius.circular(32)),
@@ -120,7 +120,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade300),
                           ),
                         ),
-                        // ---- gradient overlay ----
+
                         Container(
                           decoration: const BoxDecoration(
                             borderRadius:
@@ -132,14 +132,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             ),
                           ),
                         ),
-                        // ---- player avatar inside cover ----
+
                         Positioned(
                           right: 16,
                           bottom: 24,
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              // MODIFIED: Used theme color for the border
+
                               border: Border.all(color: theme.cardColor, width: 4),
                               boxShadow: const [
                                 BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
@@ -163,7 +163,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     children: [
                       Text(name, style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      // MODIFIED: Used theme text color
+
                       Text(
                         '#$number • $position',
                         style: textTheme.titleMedium?.copyWith(color: textTheme.bodySmall?.color),
@@ -172,7 +172,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // current team
+
                 if (teamName.isNotEmpty)
                   GestureDetector(
                     onTap: () {
@@ -194,7 +194,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ),
                 const SizedBox(height: 20),
-                // info chips
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Wrap(
@@ -211,7 +211,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // stats
+
                 if (stats.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -236,7 +236,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                     spacing: 8,
                                     runSpacing: 4,
                                     children: [
-                                      // MODIFIED: Passed context to _statChip
+
                                       _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["matches"]!, st['appearances']),
                                       _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["goals"]!, st['goals']),
                                       _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["assists"]!, st['assist']),
@@ -253,7 +253,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ),
                 const SizedBox(height: 24),
-                // transfers
+
                 if (transfers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -285,7 +285,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ),
                                 title: Text(inTeam),
                                 subtitle: Text('$from → $to'),
-                                // MODIFIED: Used theme color for the trailing text
+
                                 trailing: Text(type, style: TextStyle(color: textTheme.bodySmall?.color)),
                               ),
                             ),

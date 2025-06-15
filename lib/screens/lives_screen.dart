@@ -2,32 +2,32 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // --- ADDED: For SystemChrome ---
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
 
-
-
 class LivesScreen extends StatefulWidget {
-  late final String lang ;
+  late final String lang;
   LivesScreen({
     required this.lang
-});
+  });
   @override
   State<LivesScreen> createState() => _LivesScreenState();
 }
 
 class _LivesScreenState extends State<LivesScreen> {
   late Future<Map<String, dynamic>> futureResults;
-  late ApiData apiData ;
+  late ApiData apiData;
   Map<String, dynamic>? adsData;
 
+  RewardedInterstitialAd? _rewardedInterstitialAd;
+  bool _isRewardedInterstitialAdReady = false;
 
-  InterstitialAd? _interstitialAd;
-  bool _isInterstitialAdReady = false;
+  bool _userEarnedReward = false;
+
   Timer? _loadingCheckTimer;
-
   DateTime? _lastAdShownTime;
 
   @override
@@ -41,7 +41,7 @@ class _LivesScreenState extends State<LivesScreen> {
   @override
   void dispose() {
     _loadingCheckTimer?.cancel();
-    _interstitialAd?.dispose();
+    _rewardedInterstitialAd?.dispose();
     super.dispose();
   }
 
@@ -56,12 +56,14 @@ class _LivesScreenState extends State<LivesScreen> {
 
   Future<void> fetchAds() async {
     try {
-      late final api ;
+      late final api;
       api = ApiData();
       final data = await api.getAds();
-      setState(() {
-        adsData = data;
-      });
+      if (mounted) {
+        setState(() {
+          adsData = data;
+        });
+      }
     } catch (e) {
       adsData = {};
     }
@@ -76,32 +78,22 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: 'ca-app-pub-9181001319721306/8074630206',
+  void _loadRewardedInterstitialAd() {
+    RewardedInterstitialAd.load(
+      adUnitId: 'ca-app-pub-9181001319721306/6406366872', // Your Ad Unit ID
       request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (InterstitialAd ad) {
-          _interstitialAd = ad;
-          _isInterstitialAdReady = true;
-          _interstitialAd!.setImmersiveMode(true);
-          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (InterstitialAd ad) {
-              ad.dispose();
-              _isInterstitialAdReady = false;
-            },
-            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
-              ad.dispose();
-              _isInterstitialAdReady = false;
-            },
-          );
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+        onAdLoaded: (RewardedInterstitialAd ad) {
+          _rewardedInterstitialAd = ad;
+          _isRewardedInterstitialAdReady = true;
+          _rewardedInterstitialAd!.setImmersiveMode(true);
         },
         onAdFailedToLoad: (LoadAdError error) {
-          _isInterstitialAdReady = false;
-          _interstitialAd = null;
+          print('RewardedInterstitialAd failed to load: $error');
+          _rewardedInterstitialAd = null;
+          _isRewardedInterstitialAdReady = false;
           Future.delayed(const Duration(seconds: 30), () {
-            if (mounted) _loadInterstitialAd();
+            if (mounted) _loadRewardedInterstitialAd();
           });
         },
       ),
@@ -110,77 +102,95 @@ class _LivesScreenState extends State<LivesScreen> {
 
   void _onMatchTap(Map<String, dynamic> match) {
     final now = DateTime.now();
+    final timeSinceLastAd = _lastAdShownTime != null ? now.difference(_lastAdShownTime!) : null;
 
+    if (timeSinceLastAd == null || timeSinceLastAd >= const Duration(seconds: 50)) {
+      _loadRewardedInterstitialAd();
 
-    if (_lastAdShownTime == null ||
-        now.difference(_lastAdShownTime!) >= Duration(seconds: 40)) {
-      _lastAdShownTime = now;
-      _loadInterstitialAd();
-
-      if (_isInterstitialAdReady && _interstitialAd != null) {
-        _showInterstitialThenNavigate(match);
+      if (_isRewardedInterstitialAdReady && _rewardedInterstitialAd != null) {
+        _showRewardedInterstitialThenNavigate(match);
       } else {
         _showLoadingDialog();
-        _loadingCheckTimer = Timer.periodic(
-          const Duration(milliseconds: 500),
-              (timer) {
-            if (_isInterstitialAdReady && _interstitialAd != null) {
-              timer.cancel();
-              if (mounted) Navigator.of(context, rootNavigator: true).pop();
-              _showInterstitialThenNavigate(match);
-            }
-          },
-        );
+        _loadingCheckTimer?.cancel();
+        _loadingCheckTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+          if (_isRewardedInterstitialAdReady && _rewardedInterstitialAd != null) {
+            timer.cancel();
+            if (mounted) Navigator.of(context, rootNavigator: true).pop();
+            _showRewardedInterstitialThenNavigate(match);
+          }
+        });
+        Future.delayed(const Duration(seconds: 5), (){
+          if (mounted && _loadingCheckTimer != null && _loadingCheckTimer!.isActive) {
+            _loadingCheckTimer!.cancel();
+            Navigator.of(context, rootNavigator: true).pop();
+            _navigateToStream(match);
+          }
+        });
       }
     } else {
-      final links = Map<String, String>.from(match["stream_links"]);
-      Navigator.push(
-        context,
-        CupertinoPageRoute(
-          builder: (_) => IframeStreamScreen(streamLinks: links),
-        ),
-      );
+      _navigateToStream(match);
     }
   }
 
-  void _showInterstitialThenNavigate(Map<String, dynamic> match) {
-    if (_isInterstitialAdReady && _interstitialAd != null) {
-      _interstitialAd!.show();
-      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (InterstitialAd ad) {
-          ad.dispose();
-          _isInterstitialAdReady = false;
-          _interstitialAd = null;
-          final links = Map<String, String>.from(match["stream_links"]);
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (_) => IframeStreamScreen(streamLinks: links),
-            ),
-          );
-        },
-        onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
-          ad.dispose();
-          _isInterstitialAdReady = false;
-          _interstitialAd = null;
-          final links = Map<String, String>.from(match["stream_links"]);
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (_) => IframeStreamScreen(streamLinks: links),
-            ),
-          );
-        },
-      );
-    } else {
-      final links = Map<String, String>.from(match["stream_links"]);
-      Navigator.push(
-        context,
-        CupertinoPageRoute(
-          builder: (_) => IframeStreamScreen(streamLinks: links),
-        ),
-      );
+  void _navigateToStream(Map<String, dynamic> match){
+    final links = Map<String, String>.from(match["stream_links"]);
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (_) => IframeStreamScreen(streamLinks: links),
+      ),
+    );
+  }
+
+  void _showRewardedInterstitialThenNavigate(Map<String, dynamic> match) {
+    if (_rewardedInterstitialAd == null) {
+      _navigateToStream(match);
+      return;
     }
+
+    setState(() {
+      _userEarnedReward = false;
+    });
+
+    _rewardedInterstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (RewardedInterstitialAd ad) {
+        // --- MODIFIED: Restore system UI after ad is dismissed ---
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+        ad.dispose();
+        _rewardedInterstitialAd = null;
+        _isRewardedInterstitialAdReady = false;
+
+        if (_userEarnedReward) {
+          _navigateToStream(match);
+        } else {
+          print("Ad dismissed without earning reward. Not navigating.");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(appStrings[Localizations.localeOf(context).languageCode]!["watch_ad_to_continue"]!)),
+          );
+        }
+      },
+      onAdFailedToShowFullScreenContent: (RewardedInterstitialAd ad, AdError error) {
+        // --- MODIFIED: Restore system UI if ad fails to show ---
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+        print('RewardedInterstitialAd failed to show: $error');
+        ad.dispose();
+        _rewardedInterstitialAd = null;
+        _isRewardedInterstitialAdReady = false;
+        _navigateToStream(match);
+      },
+    );
+
+    // --- MODIFIED: Set immersive mode before showing the ad ---
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _rewardedInterstitialAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+      print('User earned reward: ${reward.amount} ${reward.type}');
+      setState(() {
+        _userEarnedReward = true;
+        _lastAdShownTime = DateTime.now();
+      });
+    });
   }
 
   void _showLoadingDialog() {
@@ -196,11 +206,11 @@ class _LivesScreenState extends State<LivesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
                 Text(
                   appStrings[Localizations.localeOf(context).languageCode]!["loading_ad"]!,
-                  style: TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),
@@ -236,13 +246,12 @@ class _LivesScreenState extends State<LivesScreen> {
               } else {
                 var livesData = snapshot.data!;
                 final lives = livesData["lives"] as List;
-                final String? encodedAd = adsData?['ads']?['streaming_page'];
-                final String? decodedAd = decodeBase64Ad(encodedAd);
 
                 if (lives.isEmpty) {
                   return Center(
-                    child: Text(                      appStrings[Localizations.localeOf(context).languageCode]!["no_available_streams"]!,
-                      style: TextStyle(fontSize: 16),
+                    child: Text(
+                      appStrings[Localizations.localeOf(context).languageCode]!["no_available_streams"]!,
+                      style: const TextStyle(fontSize: 16),
                     ),
                   );
                 }
@@ -262,42 +271,51 @@ class _LivesScreenState extends State<LivesScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                children: [
-                                  Image.network(
-                                    "https://api.syria-live.fun/img_proxy?url=" + match["home_logo"],
-                                    width: 50,
-                                    height: 50,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    match["home_team"],
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                              Flexible(
+                                child: Column(
+                                  children: [
+                                    Image.network(
+                                      "https://api.syria-live.fun/img_proxy?url=" + match["home_logo"],
+                                      width: 50,
+                                      height: 50,
+                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      match["home_team"],
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
-                               Expanded(
-                                child: Center(
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                   child: Text(
                                     appStrings[Localizations.localeOf(context).languageCode]!["tap_to_watch"]!,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 16),
+                                    style: const TextStyle(fontSize: 16, color: Colors.blueAccent, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ),
-                              Column(
-                                children: [
-                                  Image.network(
-                                    "https://api.syria-live.fun/img_proxy?url=" + match["away_logo"],
-                                    width: 50,
-                                    height: 50,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    match["away_team"],
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                              Flexible(
+                                child: Column(
+                                  children: [
+                                    Image.network(
+                                      "https://api.syria-live.fun/img_proxy?url=" + match["away_logo"],
+                                      width: 50,
+                                      height: 50,
+                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      match["away_team"],
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

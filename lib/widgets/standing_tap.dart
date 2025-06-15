@@ -49,7 +49,7 @@ class _StandingsTabState extends State<StandingsTab> {
     }
   }
 
-  // --- دوال بناء الواجهة الأصلية (بدون تغيير) ---
+
 
   Widget _buildHeaderCell(String text, {required double width}) {
     return Container(
@@ -215,7 +215,7 @@ class _StandingsTabState extends State<StandingsTab> {
       future: futureRanks,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // --- واجهة الشيمر تبدأ هنا ---
+
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final baseColor = isDark ? Colors.grey[850]! : Colors.grey[200]!;
           final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
@@ -224,7 +224,7 @@ class _StandingsTabState extends State<StandingsTab> {
             highlightColor: highlightColor,
             child: _buildShimmerLayout(),
           );
-          // --- واجهة الشيمر تنتهي هنا ---
+
         }
 
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
@@ -254,7 +254,7 @@ class _StandingsTabState extends State<StandingsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // محاكاة عنوان المجموعة
+
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
@@ -263,19 +263,19 @@ class _StandingsTabState extends State<StandingsTab> {
               decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(6)),
             ),
           ),
-          // محاكاة جدول الترتيب
+
           LayoutBuilder(
             builder: (context, constraints) {
               const totalFlex = 12;
               final unitWidth = constraints.maxWidth / totalFlex;
 
-              // محاكاة رأس الجدول
+
               final header = Container(
                 height: 50,
                 color: shimmerColor,
               );
 
-              // محاكاة صفوف الجدول
+
               final rows = List.generate(15, (index) {
                 return Container(
                   height: 48,
@@ -284,9 +284,9 @@ class _StandingsTabState extends State<StandingsTab> {
                   ),
                   child: Row(
                     children: [
-                      // محاكاة خلية الترتيب
+
                       SizedBox(width: unitWidth, child: Padding(padding: const EdgeInsets.all(14.0), child: CircleAvatar(backgroundColor: shimmerColor))),
-                      // محاكاة خلية الفريق
+
                       Container(
                         width: unitWidth * 3,
                         padding: const EdgeInsets.all(8.0),
@@ -298,7 +298,7 @@ class _StandingsTabState extends State<StandingsTab> {
                           ],
                         ),
                       ),
-                      // محاكاة خلايا الإحصائيات
+
                       ...List.generate(8, (_) => Expanded(child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 17),
                         child: Container(decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),

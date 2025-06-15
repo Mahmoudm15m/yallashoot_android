@@ -301,11 +301,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ... _ChampSection, _PenaltyKicksVisualizer, _TeamSide, _LoadingList
-// remain unchanged.
-
-// --- The main change is here, in _MatchCardState ---
-
 class _ChampSection extends StatefulWidget {
   const _ChampSection({
     required this.champ,
@@ -455,7 +450,7 @@ class _MatchCardState extends State<_MatchCard>
     with AutomaticKeepAliveClientMixin {
   late final DateTime? kickOff;
 
-  // --- 1. متغير جديد لحفظ الوقت المصحح ---
+
   DateTime? _correctedKickOffTime;
 
   bool _hasPenalties = false;
@@ -472,10 +467,10 @@ class _MatchCardState extends State<_MatchCard>
     final fixtureTimeString = widget.match['match_time'] as String?;
     final timestamp = widget.match['match_timestamp'];
 
-    // --- 2. المنطق الجديد لتصحيح الوقت ---
+
     if (fixtureTimeString != null && fixtureTimeString.isNotEmpty) {
       try {
-        // --- أ. تحويل وقت المباراة القادم من السيرفر إلى DateTime ---
+
         final timeParts = fixtureTimeString.split(':');
         final serverTime = DateTime.now().copyWith(
           hour: int.parse(timeParts[0]),
@@ -485,16 +480,16 @@ class _MatchCardState extends State<_MatchCard>
           microsecond: 0,
         );
 
-        // --- ب. حساب الفارق بين توقيت المستخدم وتوقيت السيرفر (+3) ---
-        const serverOffsetInMinutes = 180; // UTC+3
+
+        const serverOffsetInMinutes = 180;
         final userOffsetInMinutes = locator<SettingsProvider>().timeZoneOffset;
         final differenceInMinutes = userOffsetInMinutes - serverOffsetInMinutes;
 
-        // --- ج. تطبيق الفارق للحصول على الوقت الصحيح ---
+
         _correctedKickOffTime = serverTime.add(Duration(minutes: differenceInMinutes));
 
       } catch (e) {
-        // In case of parsing error, fallback to null
+
         _correctedKickOffTime = null;
       }
     }
@@ -583,14 +578,14 @@ class _MatchCardState extends State<_MatchCard>
     final textGrey = Theme.of(context).textTheme.bodySmall;
     final status = widget.match['status']?.toString() ?? '0';
 
-    // ... Live and Ended match logic remains the same ...
+
     final isPlaying = status == '1' || status == '3';
 
     if (isPlaying && kickOff != null) {
       int displayMinutes = 0;
       int displaySeconds = 0;
 
-      if (status == '1') { // الشوط الأول
+      if (status == '1') {
         final diff = now.difference(kickOff!);
         displayMinutes = diff.inMinutes;
         displaySeconds = diff.inSeconds.remainder(60);
@@ -601,7 +596,7 @@ class _MatchCardState extends State<_MatchCard>
           final secondHalfElapsed = now.difference(secondHalfStartTime);
           displayMinutes = 45 + secondHalfElapsed.inMinutes;
           displaySeconds = secondHalfElapsed.inSeconds.remainder(60);
-        } else { // Fallback if ht_time is not available
+        } else {
           final diff = now.difference(kickOff!);
           displayMinutes = diff.inMinutes;
           displaySeconds = diff.inSeconds.remainder(60);
@@ -666,13 +661,13 @@ class _MatchCardState extends State<_MatchCard>
     }
 
 
-    // --- 3. عرض الوقت المصحح للمباريات التي لم تبدأ بعد ---
+
     if (_correctedKickOffTime != null) {
       final formattedTime = DateFormat('h:mm a', currentLocale.languageCode).format(_correctedKickOffTime!);
       return Text(formattedTime, style: textBold);
     }
 
-    // Fallback in case of any error
+
     return Text(widget.match['match_time'] ?? '', style: textBold);
   }
 }

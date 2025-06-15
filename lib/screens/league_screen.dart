@@ -34,7 +34,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
   }
 
   Future<void> _loadAllData() async {
-    // Fetch all data in parallel
+
     final results = await Future.wait([
       api.getChampionMatches(widget.id).catchError((_) => null),
       _fetchRanksData().catchError((_) => null),
@@ -85,7 +85,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       ) {
     final List<_TabInfo> availableTabs = [];
 
-    // 1. Check for Matches
+
     final matchesContent = matches?['data'];
     if (matchesContent != null &&
         ((matchesContent['coming']?['data'] as List?)?.isNotEmpty == true ||
@@ -96,7 +96,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       ));
     }
 
-    // 2. Check for Ranks
+
     final ranksContent = ranks?['data'];
     if (ranksContent != null) {
       final bool hasLeague = (ranksContent['league'] as List?)?.isNotEmpty == true;
@@ -110,7 +110,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       }
     }
 
-    // 3. Check for Scorers
+
     final scorersContent = scorers?['data'];
     if (scorersContent != null && (scorersContent['scorers'] as List?)?.isNotEmpty == true) {
       availableTabs.add(_TabInfo(
@@ -119,7 +119,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       ));
     }
 
-    // 4. Check for Assists
+
     final assistsContent = assists?['data'] as List?;
     if (assistsContent != null && assistsContent.isNotEmpty) {
       availableTabs.add(_TabInfo(
@@ -131,7 +131,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     _tabs = availableTabs;
   }
 
-  // --- Matches tab helpers ---
+
   Map<String, List<dynamic>> groupGamesByRound(List<dynamic> games) {
     final Map<String, List<dynamic>> grouped = {};
     for (var game in games) {
@@ -174,7 +174,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                     leading: Image.network(homeImg, width: 40, height: 40, errorBuilder: (_,__,___) => const Icon(Icons.shield)),
                     trailing: Image.network(awayImg, width: 40, height: 40, errorBuilder: (_,__,___) => const Icon(Icons.shield)),
                     onTap: () {
-                      // final id = game['match_id'].toString();
+
                     },
                   ),
                 );
@@ -199,7 +199,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     );
   }
 
-  // --- Ranking tab helpers ---
+
   Widget _buildHeaderCell(String text, {required double width}) {
     return Container(
       width: width,
@@ -227,17 +227,17 @@ class _LeagueScreenState extends State<LeagueScreen> {
     final standingsGroups = data['standings']?['groups'] as Map?;
 
     if (groupsMap != null && groupsMap.isNotEmpty) {
-      // Build UI for Champion Groups
+
       return _buildGroupsUi(groupsMap);
     }
 
     if (standingsGroups != null && standingsGroups.isNotEmpty) {
-      // Build UI for Cup Standings
+
       return _buildGroupsUi(standingsGroups);
     }
 
     if (leagueList != null && leagueList.isNotEmpty) {
-      // Build UI for League Standings
+
       return _buildLeagueUi(leagueList);
     }
 
@@ -245,7 +245,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
   }
 
   Widget _buildLeagueUi(List<dynamic> leagueList) {
-    // Sorting logic can be added here if needed
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final unitWidth = constraints.maxWidth / 12;
@@ -356,7 +356,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     );
   }
 
-  // --- Scorers tab helper ---
+
   Widget buildScorersTab(Map<String, dynamic> data) {
     final scorers = data['scorers'] as List<dynamic>;
     return ListView.builder(
@@ -388,7 +388,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     );
   }
 
-  // --- Assists tab helper ---
+
   Widget buildAssistsTab(List<dynamic> assists) {
     return ListView.builder(
       padding: const EdgeInsets.all(8),

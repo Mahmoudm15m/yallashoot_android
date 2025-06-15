@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/league_screen.dart';
+import 'package:yallashoot/screens/search_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import 'lives_screen.dart';
 
 class RanksScreen extends StatefulWidget {
   late final String lang ;
@@ -18,13 +20,13 @@ class _RanksScreenState extends State<RanksScreen> {
   late Future<Map<String, dynamic>> futureResults;
   late ApiData yasScore ;
 
-  // تم الإبقاء على الدالة كما هي، لأنها تعمل بشكل صحيح
+
   Future<Map<String, dynamic>> fetchRanks() async {
     try {
       final data = await yasScore.getRanksData();
       return data;
     } catch (e) {
-      // يمكنك إضافة معالجة أفضل للأخطاء هنا إذا أردت
+
       return {};
     }
   }
@@ -39,6 +41,42 @@ class _RanksScreenState extends State<RanksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+      elevation: 0,
+      centerTitle: true,
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          IconButton(
+            padding: EdgeInsets.zero,
+            icon: Icon(Icons.search_outlined, size: 24),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return SearchScreen(
+                  lang: widget.lang,
+                );
+              }));
+            },
+          ),
+          SizedBox(
+            width: 10,
+          ),
+          Spacer(),
+          IconButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return LivesScreen(
+                    lang: widget.lang,
+                  );
+                }));
+              },
+              icon: Text(
+                appStrings[widget.lang]!["live_button"]!,
+                style: TextStyle(fontSize: 16, color: Colors.blueAccent),
+              )),
+        ],
+      ),
+    ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: futureResults,
         builder: (context, snapshot) {

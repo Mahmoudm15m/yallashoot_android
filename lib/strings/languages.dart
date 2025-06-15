@@ -1,6 +1,6 @@
 const Map<String, Map<String, String>> appStrings = {
   'en': {
-    // 🔧 General & Settings
+
     'settings': 'Settings',
     'dark_mode': 'Dark Mode',
     'change_language': 'Change Language',
@@ -10,7 +10,7 @@ const Map<String, Map<String, String>> appStrings = {
     'timezone': 'Timezone',
     'options': 'Options',
 
-    // 📅 Matches
+
     'today_matches': 'Today\'s Matches',
     'matches': 'Matches',
     'match_ended': 'Match Ended',
@@ -26,7 +26,7 @@ const Map<String, Map<String, String>> appStrings = {
     'next_match': 'Next Match',
     'last_match': 'Last Match',
 
-    // 📊 Match Filters
+
     'show_all': 'Show All',
     'only_live': 'Only Live',
     'only_important': 'Only Important',
@@ -34,7 +34,7 @@ const Map<String, Map<String, String>> appStrings = {
     'pin': 'Pin in top',
     'unpin': 'Unpin',
     'no_live_matches': 'No live matches at the moment!',
-    // 📰 News
+
     'news': 'News',
     'news_details': 'News Details',
     'main_news': 'Main News',
@@ -42,7 +42,7 @@ const Map<String, Map<String, String>> appStrings = {
     'latest_news': 'Latest News',
     'source': 'Source',
 
-    // ⚽️ Match Details
+
     'events': 'Match Events',
     'statistics': 'Statistics',
     'summary': 'Summary',
@@ -58,7 +58,7 @@ const Map<String, Map<String, String>> appStrings = {
     'channels': 'Channels',
     'history': 'Date',
 
-    // 📈 Statistics
+
     'possession': 'Possession',
     'shots': 'Shots',
     'shots_on_target': 'Shots on Target',
@@ -68,7 +68,7 @@ const Map<String, Map<String, String>> appStrings = {
     'red_cards': 'Red Cards',
     'offsides': 'Offsides',
 
-    // 📌 Table & Standings
+
     'ranks': 'Standings',
     'played': 'Played',
     'won': 'Won',
@@ -86,14 +86,14 @@ const Map<String, Map<String, String>> appStrings = {
     'l': 'L',
     'pk': 'PK',
 
-    // 🧍‍♂️ Players & Coaches
+
     'coach': 'Coach',
     'players': 'Players',
     'top_scorers': 'Top Scorers',
     'top_assists': 'Top Assists',
     'assists': 'Assists',
 
-    // 🔄 Match Events
+
     'red_card': 'Red Card',
     'yellow_card': 'Yellow Card',
     'substitution': 'Substitution',
@@ -104,7 +104,7 @@ const Map<String, Map<String, String>> appStrings = {
     'penalty_missed': 'Penalty Missed',
     'event': 'Event',
 
-    // 🛠 Other
+
     'no_data': 'No Data',
     'error_occurred': 'An error occurred',
     'error': 'Error',
@@ -119,7 +119,7 @@ const Map<String, Map<String, String>> appStrings = {
     'now': 'Now',
     'from': 'From',
 
-    // 🕒 Time
+
     'hours': 'Hours',
     'hour': 'Hour',
     'minutes': 'Minutes',
@@ -127,13 +127,13 @@ const Map<String, Map<String, String>> appStrings = {
     'days': 'Days',
     'day': 'Day',
 
-    // 📺 Streaming
+
     'live_button': 'Lives',
     'no_available_streams': 'No available streams at the moment!',
     'tap_to_watch': 'Tap to watch stream',
     'loading_ad': 'Loading ad...',
 
-    // 🏆 Teams & Info
+
     'teams': 'Teams',
     'team': 'Team',
     'team_info': 'Team Info',
@@ -143,14 +143,14 @@ const Map<String, Map<String, String>> appStrings = {
     'season_statistics': 'Season Statistics',
     'formations': 'Formations',
 
-    // ↔️ Direction
+
     'left': 'Left',
     'right': 'Right',
   },
 
-  // 🟢 Arabic Translation (Structured the same as above for maintainability)
+
   'ar': {
-    // 🔧 General & Settings
+
     'settings': 'الإعدادات',
     'dark_mode': 'الوضع الداكن',
     'change_language': 'تغيير اللغة',
@@ -160,7 +160,7 @@ const Map<String, Map<String, String>> appStrings = {
     'timezone': 'فارق التوقيت',
     'options': 'الخيارات',
 
-    // 📅 Matches
+
     'today_matches': 'مباريات اليوم',
     'matches': 'المباريات',
     'match_ended': 'انتهت المباراة',
@@ -177,7 +177,7 @@ const Map<String, Map<String, String>> appStrings = {
     'last_match': 'المباراة الأخيرة',
     'history': 'التاريخ',
 
-    // 📊 Match Filters
+
     'show_all': 'عرض الكل',
     'only_live': 'البث المباشر فقط',
     'only_important': 'المهم فقط',
@@ -186,7 +186,7 @@ const Map<String, Map<String, String>> appStrings = {
     'unpin': 'إلغاء التثبيت',
     'no_live_matches': 'لا توجد مباريات مباشرة في الوقت الحالي!',
 
-    // 📰 News
+
     'news': 'الأخبار',
     'news_details': 'تفاصيل الخبر',
     'main_news': 'الأخبار الرئيسية',
@@ -194,7 +194,7 @@ const Map<String, Map<String, String>> appStrings = {
     'latest_news': 'آخر الأخبار',
     'source': 'المصدر',
 
-    // ⚽️ Match Details
+
     'events': 'أحداث المباراة',
     'statistics': 'الإحصائيات',
     'summary': 'ملخص المباراة',
@@ -209,7 +209,7 @@ const Map<String, Map<String, String>> appStrings = {
     'championship': 'البطولة',
     'channels': 'القنوات الناقله',
 
-    // 📈 Statistics
+
     'possession': 'الاستحواذ',
     'shots': 'التسديدات',
     'shots_on_target': 'التسديدات على المرمى',
@@ -219,7 +219,7 @@ const Map<String, Map<String, String>> appStrings = {
     'red_cards': 'البطاقات الحمراء',
     'offsides': 'التسللات',
 
-    // 📌 Table & Standings
+
     'ranks': 'الترتيب',
     'played': 'لعب',
     'won': 'فاز',
@@ -237,14 +237,14 @@ const Map<String, Map<String, String>> appStrings = {
     'l': 'خ',
     'pk': 'ضج',
 
-    // 🧍‍♂️ Players & Coaches
+
     'coach': 'المدرب',
     'players': 'اللاعبين',
     'top_scorers': 'هدافين الدوري',
     'top_assists': 'صانعي الأهداف',
     'assists': 'صناعات',
 
-    // 🔄 Match Events
+
     'red_card': 'بطاقة حمراء',
     'yellow_card': 'بطاقة صفراء',
     'substitution': 'تبديل',
@@ -255,7 +255,7 @@ const Map<String, Map<String, String>> appStrings = {
     'penalty_missed': 'ركلة جزاء مهدرة',
     'event': 'حدث',
 
-    // 🛠 Other
+
     'no_data': 'لا توجد بيانات',
     'error_occurred': 'حدث خطأ',
     'error': 'خطأ',
@@ -270,7 +270,7 @@ const Map<String, Map<String, String>> appStrings = {
     'now': 'الآن',
     'from': 'منذ',
 
-    // 🕒 Time
+
     'hours': 'ساعات',
     'hour': 'ساعة',
     'minutes': 'دقائق',
@@ -278,13 +278,13 @@ const Map<String, Map<String, String>> appStrings = {
     'days': 'أيام',
     'day': 'يوم',
 
-    // 📺 Streaming
+
     'live_button': 'البث المتاح',
     'no_available_streams': 'لا توجد بثوث متاحه حاليا !',
     'tap_to_watch': 'اضغط لمشاهدة البث',
     'loading_ad': 'جارٍ تحميل الإعلان...',
 
-    // 🏆 Teams & Info
+
     'teams': 'الفرق',
     'team': 'الفريق',
     'team_info': 'معلومات الفريق',
@@ -294,7 +294,7 @@ const Map<String, Map<String, String>> appStrings = {
     'season_statistics': 'إحصائيات الموسم',
     'formations': 'خطة اللعب',
 
-    // ↔️ Direction
+
     'left': 'يسار',
     'right': 'يمين',
   },

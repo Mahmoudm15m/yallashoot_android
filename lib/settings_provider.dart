@@ -15,10 +15,10 @@ class SettingsProvider extends ChangeNotifier {
   Locale get locale => _locale;
   int get timeZoneOffset => _timeZoneOffset;
 
-  // --- 1. الـ Constructor أصبح فارغًا ---
+
   SettingsProvider();
 
-  // --- 2. جعلنا الدالة عامة (public) ليتم استدعاؤها من الخارج ---
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -44,10 +44,10 @@ class SettingsProvider extends ChangeNotifier {
     final themeIndex = prefs.getInt(_themeKey) ?? ThemeMode.light.index;
     _themeMode = ThemeMode.values[themeIndex];
 
-    // لا نحتاج notifyListeners هنا لأن الواجهة لم تبدأ بعد
+
   }
 
-  // ... باقي الدوال كما هي ...
+
   Future<void> updateThemeMode(ThemeMode newThemeMode) async {
     if (_themeMode == newThemeMode) return;
     _themeMode = newThemeMode;

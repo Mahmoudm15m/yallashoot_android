@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class CountdownTimer extends StatefulWidget {
-  /// نستقبل هنا أيضًا حقل الـ status من matchInfo
+
   final String datetimeStr;
   final String statusStr;
   const CountdownTimer({
@@ -31,7 +31,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void didUpdateWidget(covariant CountdownTimer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // إذا تغيّر التاريخ أو الـ status، أعدّ تشغيل العدّاد
+
     if (oldWidget.datetimeStr != widget.datetimeStr ||
         oldWidget.statusStr != widget.statusStr) {
       _timer?.cancel();
@@ -82,7 +82,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final now = DateTime.now();
     final statusLower = widget.statusStr.toLowerCase();
 
-    // حالة البطولة حسب الوقت والحالة الواردة من الـ API
+
     Widget content;
     Color bgColor;
     IconData iconData;

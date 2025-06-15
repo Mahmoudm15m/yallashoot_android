@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/news_details_screen.dart';
+import 'package:yallashoot/screens/search_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import 'lives_screen.dart';
 
 class NewsScreen extends StatefulWidget {
   late final String lang ;
@@ -36,6 +38,42 @@ class _NewsScreenState extends State<NewsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        title: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.search_outlined, size: 24),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return SearchScreen(
+                    lang: widget.lang,
+                  );
+                }));
+              },
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Spacer(),
+            IconButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return LivesScreen(
+                      lang: widget.lang,
+                    );
+                  }));
+                },
+                icon: Text(
+                  appStrings[widget.lang]!["live_button"]!,
+                  style: TextStyle(fontSize: 16, color: Colors.blueAccent),
+                )),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
           future: futureResults,
@@ -109,7 +147,7 @@ class _NewsScreenState extends State<NewsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // قسم الأخبار الهامة
+
                       Text(appStrings[Localizations.localeOf(context).languageCode]!["important_news"]!,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
@@ -178,7 +216,7 @@ class _NewsScreenState extends State<NewsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // قسم آخر الأخبار
+
                       Text(appStrings[Localizations.localeOf(context).languageCode]!["latest_news"]!,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),

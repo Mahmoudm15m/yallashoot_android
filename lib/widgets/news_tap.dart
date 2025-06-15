@@ -51,7 +51,7 @@ class _NewsTabViewState extends State<NewsTabView> {
       future: _newsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // --- واجهة الشيمر تبدأ هنا ---
+
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final baseColor = isDark ? Colors.grey[850]! : Colors.grey[200]!;
           final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
@@ -62,13 +62,13 @@ class _NewsTabViewState extends State<NewsTabView> {
             child: ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.all(8.0),
-              itemCount: 5, // عرض 5 بطاقات شيمر لملء الشاشة
+              itemCount: 5,
               itemBuilder: (context, index) {
                 return const _NewsCardShimmer();
               },
             ),
           );
-          // --- واجهة الشيمر تنتهي هنا ---
+
         }
         if (snapshot.hasError || !snapshot.hasData) {
           return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!));
@@ -91,7 +91,7 @@ class _NewsTabViewState extends State<NewsTabView> {
   }
 }
 
-// --- الواجهة الأصلية لبطاقة الخبر ---
+
 class _NewsCard extends StatelessWidget {
   final Map<String, dynamic> newsItem;
   final String Function(String) formatDate;
@@ -172,7 +172,7 @@ class _NewsCard extends StatelessWidget {
   }
 }
 
-// --- واجهة الشيمر الجديدة لبطاقة الخبر ---
+
 class _NewsCardShimmer extends StatelessWidget {
   const _NewsCardShimmer();
 
@@ -189,19 +189,19 @@ class _NewsCardShimmer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // محاكاة الصورة
+
           Container(
             height: 180,
             width: double.infinity,
             color: shimmerColor,
           ),
-          // محاكاة النصوص
+
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // محاكاة العنوان
+
                 Container(
                   height: 20,
                   width: double.infinity,
@@ -214,14 +214,14 @@ class _NewsCardShimmer extends StatelessWidget {
                   decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(6)),
                 ),
                 const SizedBox(height: 12),
-                // محاكاة الوصف
+
                 Container(height: 14, width: double.infinity, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
                 const SizedBox(height: 6),
                 Container(height: 14, width: double.infinity, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
                 const SizedBox(height: 6),
                 Container(height: 14, width: MediaQuery.of(context).size.width * 0.85, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
                 const SizedBox(height: 16),
-                // محاكاة التاريخ
+
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Container(

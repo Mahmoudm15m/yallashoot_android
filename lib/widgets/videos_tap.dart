@@ -35,7 +35,7 @@ class _VideosTapState extends State<VideosTap> {
       future: _videosFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // --- واجهة الشيمر تبدأ هنا ---
+
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final baseColor = isDark ? Colors.grey[850]! : Colors.grey[200]!;
           final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
@@ -46,15 +46,15 @@ class _VideosTapState extends State<VideosTap> {
             child: ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.all(8.0),
-              itemCount: 7, // عرض 7 بطاقات شيمر لملء الشاشة
+              itemCount: 7,
               itemBuilder: (context, index) => const _VideoCardShimmer(),
               separatorBuilder: (context, index) => const SizedBox(height: 4),
             ),
           );
-          // --- واجهة الشيمر تنتهي هنا ---
+
         }
         if (snapshot.hasError || !snapshot.hasData) {
-          // ملاحظة: تم تعديل النص ليكون أكثر دقة
+
           return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!));
         }
 
@@ -146,7 +146,7 @@ class _VideosTapState extends State<VideosTap> {
 }
 
 
-// --- واجهة الشيمر الجديدة لبطاقة الفيديو ---
+
 class _VideoCardShimmer extends StatelessWidget {
   const _VideoCardShimmer();
 
@@ -166,7 +166,7 @@ class _VideoCardShimmer extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // محاكاة صورة الفيديو المصغرة
+
             Container(
               width: 120,
               height: 80,
@@ -176,20 +176,20 @@ class _VideoCardShimmer extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // محاكاة النصوص والأيقونة
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // محاكاة عنوان الفيديو
+
                   Container(
                     height: 16,
                     width: 140,
                     decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4)),
                   ),
                   const SizedBox(height: 8),
-                  // محاكاة المصدر
+
                   Container(
                     height: 14,
                     width: 100,

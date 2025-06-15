@@ -270,7 +270,7 @@ class _FootballPitch extends StatelessWidget {
           xFraction = 0.5;
         }
 
-        // --- التغيير: تم تكبير حجم اللاعبين ---
+
         double markerSize = constraints.maxWidth / 7.5;
 
         markers.add(Positioned(
@@ -309,7 +309,7 @@ class _FootballPitch extends StatelessWidget {
 
       final Map<String, double> positionsY = {};
       if (lineCount > 0) {
-        const double topBoundary = 0.12; // تم إعطاء مساحة أكبر في الأعلى
+        const double topBoundary = 0.12;
         const double bottomBoundary = 0.78;
         const double verticalRange = bottomBoundary - topBoundary;
 
@@ -331,7 +331,7 @@ class _FootballPitch extends StatelessWidget {
           var player = linePlayers[i];
           double x = (i + 1) / (linePlayers.length + 1);
           double y = positionsY[lineKey]!;
-          // --- التغيير: تم تكبير حجم اللاعبين ---
+
           double markerSize = constraints.maxWidth / 7.5;
 
           markers.add(Positioned(
@@ -380,7 +380,7 @@ class _PlayerMarker extends StatelessWidget {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
-                // --- التغيير: تم إضافة ظل وإطار للدائرة لجعلها أجمل ---
+
                 Container(
                   decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -393,7 +393,7 @@ class _PlayerMarker extends StatelessWidget {
                       ]
                   ),
                   child: CircleAvatar(
-                    radius: size * 0.4, // تكبير نصف القطر
+                    radius: size * 0.4,
                     backgroundImage: image != null
                         ? NetworkImage("https://imgs.ysscores.com/player/150/$image")
                         : null,
@@ -453,7 +453,7 @@ class _PlayerMarker extends StatelessWidget {
   }
 }
 
-// --- التغيير: تم إعادة تصميم هذه الويدجت بالكامل ---
+
 class _SubstitutesList extends StatelessWidget {
   final List<Map<String, dynamic>> players;
   const _SubstitutesList({required this.players});
@@ -469,7 +469,7 @@ class _SubstitutesList extends StatelessWidget {
       );
     }
 
-    // استخدام ListView.builder لتحسين الأداء
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -548,7 +548,7 @@ class _SubstitutesList extends StatelessWidget {
   }
 }
 
-// --- التغيير: تم تحسين تصميم عنوان القسم ---
+
 class _SectionTitle extends StatelessWidget {
   final String title;
   const _SectionTitle({required this.title});
@@ -578,7 +578,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// --- التغيير: تم تحديث الشيمر ليعكس التصميم الجديد ---
+
 class _TeamLineupViewShimmer extends StatelessWidget {
   final Color shimmerColor;
   const _TeamLineupViewShimmer({required this.shimmerColor});
@@ -596,14 +596,14 @@ class _TeamLineupViewShimmer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                // Shimmer for Section Title
+
                 Row(children: [
                   Container(width: 5, height: 20, color: shimmerColor),
                   const SizedBox(width: 8),
                   Container(width: 150, height: 20, color: shimmerColor),
                 ]),
                 const SizedBox(height: 24),
-                // Shimmer for Section Title
+
                 Row(children: [
                   Container(width: 5, height: 20, color: shimmerColor),
                   const SizedBox(width: 8),

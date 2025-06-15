@@ -40,11 +40,11 @@ class _TeamScreenState extends State<TeamScreen> {
 
   Widget buildMatchesSection(
       BuildContext context, String title, List<dynamic> games) {
-    // ثيم التطبيق الحالي
+
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
-    // ألوان متكيّفة مع الوضع
+
     final Color headerBg   = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
     final Color headerText = isDark ? Colors.white         : Colors.black87;
 
@@ -61,12 +61,12 @@ class _TeamScreenState extends State<TeamScreen> {
           ),
         ),
 
-        // كل مجموعة مباريات حسب الجولة
+
         ...grouped.entries.map((entry) {
           return StickyHeader(
             header: Container(
               width: double.infinity,
-              color: headerBg,   // خلفية ديناميّة
+              color: headerBg,
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Center(
                 child: Text(
@@ -74,13 +74,13 @@ class _TeamScreenState extends State<TeamScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: headerText,  // نص ديناميّ
+                    color: headerText,
                   ),
                 ),
               ),
             ),
 
-            // محتوى المباريات في هذه الجولة
+
             content: Column(
               children: entry.value.map<Widget>((game) {
                 final home = game['home_team'] as Map<String, dynamic>;
@@ -148,7 +148,7 @@ class _TeamScreenState extends State<TeamScreen> {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
-    // ألوان ديناميّة
+
     final Color selectedColor =
     isDark ? Colors.white : theme.colorScheme.primary;
     final Color unselectedColor =

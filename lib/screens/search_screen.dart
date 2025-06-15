@@ -22,7 +22,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
 
-  // Controllers for horizontal scrolling
+
   final ScrollController _champController = ScrollController();
   final ScrollController _playerController = ScrollController();
   final ScrollController _teamController = ScrollController();

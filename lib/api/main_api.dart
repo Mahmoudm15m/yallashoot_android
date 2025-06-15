@@ -18,7 +18,6 @@ class ApiData {
       'language': settings.locale.languageCode,
       'timezone': settings.timeZoneOffset.toString(),
     };
-    print("Headers updated reactively: $headers"); // للتحقق
   }
 
 
@@ -52,7 +51,7 @@ class ApiData {
     }
   }
 
-  // ... باقي الدوال كما هي بدون أي تغيير
+
   Future<Map<String, dynamic>> getHomeData() async {
     return await fetchData("matches");
   }

@@ -14,11 +14,11 @@ import 'api/main_api.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
-  // التأكد من تهيئة Flutter قبل أي شيء
+
   WidgetsFlutterBinding.ensureInitialized();
-  // تهيئة إعلانات جوجل
+
   MobileAds.instance.initialize();
-  // تفعيل الـ Service Locator لتسجيل الخدمات
+
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
   setupLocator(settingsProvider);
@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       locale: settingsProvider.locale,
       themeMode: settingsProvider.themeMode,
-      //
+
       supportedLocales: const [
         Locale('en'),
         Locale('ar'),
@@ -126,7 +126,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> fetchUpdates() async {
-    const int currentVersion = 8;
+    const int currentVersion = 9;
     try {
       final data = await locator<ApiData>().checkUpdate(currentVersion);
       if (data['ok'] == true && data['version'] > currentVersion) {
@@ -187,10 +187,10 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // اللغة تتغير تلقائياً لأن MaterialApp يراقب الـ Provider
+
     final currentLocale = Localizations.localeOf(context);
 
-    // تم حذف كود تحديث الـ API لأنه يحدث الآن تلقائياً داخل ApiData
+
 
     final screens = <Widget>[
       HomeScreen(),

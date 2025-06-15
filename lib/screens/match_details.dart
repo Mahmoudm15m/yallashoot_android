@@ -1,4 +1,4 @@
-// lib/screens/match_details.dart
+
 
 import 'dart:async';
 import 'dart:ui';
@@ -13,7 +13,7 @@ import '../widgets/lineup_tap.dart';
 import '../widgets/news_tap.dart';
 import 'package:yallashoot/widgets/standing_tap.dart';
 
-// Helper class to provide a ticking clock every second for live updates.
+
 class ClockTicker {
   late final ValueNotifier<DateTime> _notifier;
   ValueListenable<DateTime> get listenable => _notifier;
@@ -197,7 +197,7 @@ class _MatchDetailsState extends State<MatchDetails> {
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
         children: [
-          // Shimmer for the Header (AppBar)
+
           Container(
             height: 240.0 + kToolbarHeight,
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -206,7 +206,7 @@ class _MatchDetailsState extends State<MatchDetails> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: kToolbarHeight),
-                // Shimmer for Championship info
+
                 Container(
                   width: 120,
                   height: 16,
@@ -216,12 +216,12 @@ class _MatchDetailsState extends State<MatchDetails> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Shimmer for Teams and Score
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Home Team Shimmer
+
                     Expanded(
                       child: Column(
                         children: [
@@ -239,7 +239,7 @@ class _MatchDetailsState extends State<MatchDetails> {
                         ],
                       ),
                     ),
-                    // Score Shimmer
+
                     Container(
                       width: 100,
                       height: 40,
@@ -248,7 +248,7 @@ class _MatchDetailsState extends State<MatchDetails> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    // Away Team Shimmer
+
                     Expanded(
                       child: Column(
                         children: [
@@ -271,7 +271,7 @@ class _MatchDetailsState extends State<MatchDetails> {
               ],
             ),
           ),
-          // Shimmer for Tabs area
+
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -287,14 +287,14 @@ class _MatchDetailsState extends State<MatchDetails> {
                 )),
           ),
           const Divider(height: 24),
-          // Shimmer for Tab Content (e.g., Summary)
+
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  // Title shimmer
+
                   width: 150,
                   height: 24,
                   decoration: BoxDecoration(
@@ -310,7 +310,7 @@ class _MatchDetailsState extends State<MatchDetails> {
                 _buildShimmerEventItem(color: bodyShimmerColor),
                 const SizedBox(height: 24),
                 Container(
-                  // Title shimmer
+
                   width: 120,
                   height: 24,
                   decoration: BoxDecoration(
@@ -476,7 +476,7 @@ class _MatchDetailsState extends State<MatchDetails> {
   }
 
   Widget _buildScoreAndTimeDisplay(Map<String, dynamic> data) {
-    // This builder will run every second, getting the current time 'now'
+
     return ValueListenableBuilder<DateTime>(
       valueListenable: _clock.listenable,
       builder: (context, now, __) {
@@ -484,7 +484,7 @@ class _MatchDetailsState extends State<MatchDetails> {
         final locale = Localizations.localeOf(context).languageCode;
         Widget statusWidget;
 
-        // --- 1. Live Match ---
+
         final isPlaying = status == '1' || status == '3';
         if (isPlaying) {
           final kickOffTimestamp = data['match_timestamp'] as int?;
@@ -496,10 +496,10 @@ class _MatchDetailsState extends State<MatchDetails> {
                 .toLocal();
 
             if (status == '1') {
-              // First Half
+
               displayMinutes = now.difference(kickOff).inMinutes;
             } else {
-              // status == '3', Second Half
+
               final htTimestamp = data['ht_time'] as int?;
               if (htTimestamp != null) {
                 final secondHalfStartTime =
@@ -508,21 +508,21 @@ class _MatchDetailsState extends State<MatchDetails> {
                 displayMinutes =
                     45 + now.difference(secondHalfStartTime).inMinutes;
               } else {
-                // Fallback if halftime timestamp is missing
+
                 displayMinutes = now.difference(kickOff).inMinutes;
               }
             }
           }
-          // Clamp minutes to a reasonable range
+
           displayMinutes = displayMinutes.clamp(0, 140);
 
           statusWidget = Text(
-            "${displayMinutes}'", // Display current minute with a '
+            "${displayMinutes}'",
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold),
           );
 
-          // --- 2. Halftime Break ---
+
         } else if (status == '2') {
           statusWidget = Text(
             appStrings[locale]!["break"]!,
@@ -530,7 +530,7 @@ class _MatchDetailsState extends State<MatchDetails> {
                 color: Colors.white, fontWeight: FontWeight.bold),
           );
 
-          // --- 3. Ended Match ---
+
         } else if (status == '4' || status == '11') {
           statusWidget = Text(
             appStrings[locale]!["match_ended"]!,
@@ -538,14 +538,14 @@ class _MatchDetailsState extends State<MatchDetails> {
                 color: Colors.white, fontWeight: FontWeight.bold),
           );
 
-          // --- 4. Not Started Match (with Timezone Correction) ---
+
         } else {
           final fixtureTimeString = data['match_time'] as String?;
           String timeText = appStrings[locale]!["not_started"]!;
 
           if (fixtureTimeString != null && fixtureTimeString.isNotEmpty) {
             try {
-              // a. Parse time from server
+
               final timeParts = fixtureTimeString.split(':');
               final serverTime = DateTime.now().copyWith(
                   hour: int.parse(timeParts[0]),
@@ -555,20 +555,20 @@ class _MatchDetailsState extends State<MatchDetails> {
                   microsecond: 0
               );
 
-              // b. Calculate difference between user's timezone and server's (UTC+3)
-              const serverOffsetInMinutes = 180; // UTC+3 is 180 minutes
+
+              const serverOffsetInMinutes = 180;
               final userOffsetInMinutes = now.timeZoneOffset.inMinutes;
               final differenceInMinutes =
                   userOffsetInMinutes - serverOffsetInMinutes;
 
-              // c. Apply difference to get correct local time
+
               final correctedKickOffTime =
               serverTime.add(Duration(minutes: differenceInMinutes));
 
               timeText =
                   DateFormat('h:mm a', locale).format(correctedKickOffTime);
             } catch (e) {
-              // Fallback to original time string if parsing fails
+
               timeText = fixtureTimeString.substring(0,5);
             }
           }
@@ -577,7 +577,7 @@ class _MatchDetailsState extends State<MatchDetails> {
                   color: Colors.white, fontWeight: FontWeight.bold));
         }
 
-        // The final layout for the score and status widget
+
         return Column(
           children: [
             Text(
@@ -598,7 +598,7 @@ class _MatchDetailsState extends State<MatchDetails> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Show live dot if playing or in break
+
                   if (isPlaying || status == '2')
                     Container(
                       width: 8,
@@ -1128,7 +1128,7 @@ class _SystemEventChip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Chip(
-          avatar: Icon(getEventIcon(), size: 16), // Color will be inherited
+          avatar: Icon(getEventIcon(), size: 16),
           label: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
