@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/league_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class RanksScreen extends StatefulWidget {
-  const RanksScreen({Key? key}) : super(key: key);
+  late final String lang ;
+
+  RanksScreen({
+    required this.lang,
+});
 
   @override
   State<RanksScreen> createState() => _RanksScreenState();
@@ -11,7 +16,7 @@ class RanksScreen extends StatefulWidget {
 
 class _RanksScreenState extends State<RanksScreen> {
   late Future<Map<String, dynamic>> futureResults;
-  ApiData yasScore = ApiData();
+  late ApiData yasScore ;
 
   // تم الإبقاء على الدالة كما هي، لأنها تعمل بشكل صحيح
   Future<Map<String, dynamic>> fetchRanks() async {
@@ -27,6 +32,7 @@ class _RanksScreenState extends State<RanksScreen> {
   @override
   void initState() {
     super.initState();
+    yasScore = ApiData();
     futureResults = fetchRanks();
   }
 
@@ -39,14 +45,13 @@ class _RanksScreenState extends State<RanksScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("حدث خطأ أثناء جلب البيانات"));
+            return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!));
           } else {
-            // [تعديل] الوصول إلى القائمة داخل 'data'
             final data = snapshot.data!;
             List<dynamic> ranks = data["ranks"]?["data"] ?? [];
 
             if (ranks.isEmpty) {
-              return const Center(child: Text("لا توجد بيانات للترتيب"));
+              return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!));
             }
 
             return ListView.builder(
@@ -57,8 +62,8 @@ class _RanksScreenState extends State<RanksScreen> {
                   padding: EdgeInsets.zero,
                   onPressed: (){
                     Navigator.push(context, MaterialPageRoute(builder: (context){
-                      // [تعديل] استخدام "id" بدلاً من "rank_id" وتحويله إلى نص
-                      return LeagueScreen(id: item["url_id"].toString());
+                      final Locale currentLocale = Localizations.localeOf(context);
+                      return LeagueScreen(id: item["url_id"].toString(), lang: currentLocale.languageCode,);
                     }));
                   },
                   icon: Card(
@@ -67,16 +72,14 @@ class _RanksScreenState extends State<RanksScreen> {
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(8),
                       leading: Image.network(
-                        // [تعديل] استخدام رابط الصور الجديد
                         "https://imgs.ysscores.com/championship/64/${item["image"]}",
                         width: 40,
                         height: 40,
-                        fit: BoxFit.contain, // استخدام contain أفضل للشعارات
+                        fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => const Icon(Icons.shield_outlined, size: 40),
                       ),
                       title: Text(
-                        // [تعديل] استخدام "title" بدلاً من "name"
-                        item["title"] ?? "بطولة غير مسماة",
+                        item["title"] ?? appStrings[Localizations.localeOf(context).languageCode]!["unknown"]!,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,

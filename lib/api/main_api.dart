@@ -1,16 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-Map<String, String> headers = {
-  'user-agent': 'Dart/3.5 (dart:io)',
-};
+import 'package:yallashoot/locator.dart';
+import 'package:yallashoot/settings_provider.dart';
 
 class ApiData {
+  late Map<String, String> headers;
+
+  ApiData() {
+    _updateHeaders();
+    locator<SettingsProvider>().addListener(_updateHeaders);
+  }
+
+  void _updateHeaders() {
+    final settings = locator<SettingsProvider>();
+    headers = {
+      'user-agent': 'Dart/3.5 (dart:io)',
+      'language': settings.locale.languageCode,
+      'timezone': settings.timeZoneOffset.toString(),
+    };
+    print("Headers updated reactively: $headers"); // للتحقق
+  }
+
+
   final String baseUrl = "http://185.224.129.206:5000/api/v2";
 
   Future<Map<String, dynamic>> fetchData(String endpoint) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/$endpoint'));
+      final response = await http.get(Uri.parse('$baseUrl/$endpoint'), headers: headers);
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         return json.decode(decodedBody) as Map<String, dynamic>;
@@ -24,7 +40,7 @@ class ApiData {
 
   Future<Map<String, dynamic>> fetchUpdateData(String endpoint) async {
     try {
-      final response = await http.get(Uri.parse('http://185.224.129.206:5000/$endpoint'));
+      final response = await http.get(Uri.parse('https://api.syria-live.fun/$endpoint'), headers: headers);
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
         return json.decode(decodedBody) as Map<String, dynamic>;
@@ -36,6 +52,7 @@ class ApiData {
     }
   }
 
+  // ... باقي الدوال كما هي بدون أي تغيير
   Future<Map<String, dynamic>> getHomeData() async {
     return await fetchData("matches");
   }
@@ -52,8 +69,11 @@ class ApiData {
     return await fetchData("news");
   }
   Future<Map<String, dynamic>> getLivesData() async {
-    return await fetchData("lives");
+    final url = "https://api.syria-live.fun/api/v2/lives" ;
+    final response = await http.get(Uri.parse(url), headers: headers);
+    return jsonDecode(response.body);
   }
+
   Future<Map<String, dynamic>> getMatchesData(String date) async {
     return await fetchData("matches?date=$date");
   }
@@ -99,7 +119,7 @@ class ApiData {
     final url = "http://185.224.129.206:5000/api/v2/player_info?player_id=$playerId" ;
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
-}
+  }
   Future<dynamic> getTeamMatches(String teamId) async {
     final url = "http://185.224.129.206:5000/api/v2/team_matches?team_id=$teamId" ;
     final response = await http.get(Uri.parse(url), headers: headers);
@@ -125,6 +145,9 @@ class ApiData {
   }
   Future<Map<String, dynamic>> getMatchEvents(String id) async {
     return await fetchData("matches/$id/events");
+  }
+  Future<Map<String, dynamic>> getMatchVideos(String id) async {
+    return await fetchData("matches/$id/videos");
   }
   Future<Map<String, dynamic>> getMatchNews(String id) async {
     return await fetchData("match_news?row_id=$id");

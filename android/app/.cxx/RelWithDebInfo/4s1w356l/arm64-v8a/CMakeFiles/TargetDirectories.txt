@@ -1,0 +1,2 @@
+D:/work/yallashoot/android/app/.cxx/RelWithDebInfo/4s1w356l/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/work/yallashoot/android/app/.cxx/RelWithDebInfo/4s1w356l/arm64-v8a/CMakeFiles/rebuild_cache.dir

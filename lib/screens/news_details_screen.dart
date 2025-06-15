@@ -1,16 +1,17 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class NewsDetailsScreen extends StatefulWidget {
   final String id;
   final String img;
-
+  final String lang ;
   const NewsDetailsScreen({
     Key? key,
     required this.id,
     required this.img,
+    required this.lang,
   }) : super(key: key);
 
   @override
@@ -19,7 +20,7 @@ class NewsDetailsScreen extends StatefulWidget {
 
 class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
   late Future<Map<String, dynamic>> futureResults;
-  ApiData apiData = ApiData();
+  late ApiData apiData;
 
   Future<Map<String, dynamic>> fetchNewsDetails() async {
     try {
@@ -33,6 +34,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    apiData = ApiData();
     futureResults = fetchNewsDetails();
   }
 
@@ -40,7 +42,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تفاصيل الخبر'),
+        title: Text(appStrings[Localizations.localeOf(context).languageCode]!["news_details"]!),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: futureResults,
@@ -50,11 +52,11 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
           } else if (snapshot.hasError ||
               snapshot.data == null ||
               snapshot.data!.isEmpty) {
-            return const Center(child: Text('حدث خطأ أثناء جلب البيانات'));
+            return  Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!));
           } else {
             final newsDetails = snapshot.data!['news_details']?['data'];
             if (newsDetails == null) {
-              return const Center(child: Text('لا توجد بيانات للخبر'));
+              return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!));
             }
             return Padding(
               padding: EdgeInsets.all(8.0),
@@ -73,7 +75,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      newsDetails['title'] ?? 'بدون عنوان',
+                      newsDetails['title'] ?? appStrings[Localizations.localeOf(context).languageCode]!["unknown"]!,
                       style: const TextStyle(
                           fontSize: 24, fontWeight: FontWeight.bold),
                     ),
@@ -81,7 +83,7 @@ class _NewsDetailsScreenState extends State<NewsDetailsScreen> {
                     Html(
                       data: (newsDetails['full_news'] != null && (newsDetails['full_news'] as String).isNotEmpty)
                           ? newsDetails['full_news']
-                          : (newsDetails['news_desc'] ?? 'لا يوجد وصف للخبر'),
+                          : (newsDetails['news_desc'] ?? appStrings[Localizations.localeOf(context).languageCode]!["unknown"]!),
                       style: {
                         "img": Style(
                           width: Width(MediaQuery.of(context).size.width * 0.95),

@@ -1,0 +1,301 @@
+const Map<String, Map<String, String>> appStrings = {
+  'en': {
+    // 🔧 General & Settings
+    'settings': 'Settings',
+    'dark_mode': 'Dark Mode',
+    'change_language': 'Change Language',
+    'language': 'Language',
+    'english': 'English',
+    'arabic': 'Arabic',
+    'timezone': 'Timezone',
+    'options': 'Options',
+
+    // 📅 Matches
+    'today_matches': 'Today\'s Matches',
+    'matches': 'Matches',
+    'match_ended': 'Match Ended',
+    'not_started': 'Not Started',
+    'live': 'Live',
+    'match_starts_in': 'Match starts in:',
+    'match_in_progress': 'Match in progress',
+    'match_started': 'Match Started',
+    'end_first_half': 'End of First Half',
+    'start_second_half': 'Start of Second Half',
+    'no_upcoming_matches': 'No upcoming matches',
+    'no_previous_matches': 'No previous matches',
+    'next_match': 'Next Match',
+    'last_match': 'Last Match',
+
+    // 📊 Match Filters
+    'show_all': 'Show All',
+    'only_live': 'Only Live',
+    'only_important': 'Only Important',
+    'search_here': 'Search Here ...',
+    'pin': 'Pin in top',
+    'unpin': 'Unpin',
+    'no_live_matches': 'No live matches at the moment!',
+    // 📰 News
+    'news': 'News',
+    'news_details': 'News Details',
+    'main_news': 'Main News',
+    'important_news': 'Important News',
+    'latest_news': 'Latest News',
+    'source': 'Source',
+
+    // ⚽️ Match Details
+    'events': 'Match Events',
+    'statistics': 'Statistics',
+    'summary': 'Summary',
+    'details': 'Details',
+    'lineup': 'Lineup',
+    'confrontations': 'Confrontations',
+    'videos': 'Videos',
+    'match_details': 'Match Details',
+    'stadium': 'Stadium',
+    'round': 'Round',
+    'league': 'League',
+    'championship': 'Championship',
+    'channels': 'Channels',
+    'history': 'Date',
+
+    // 📈 Statistics
+    'possession': 'Possession',
+    'shots': 'Shots',
+    'shots_on_target': 'Shots on Target',
+    'corners': 'Corners',
+    'fouls': 'Fouls',
+    'yellow_cards': 'Yellow Cards',
+    'red_cards': 'Red Cards',
+    'offsides': 'Offsides',
+
+    // 📌 Table & Standings
+    'ranks': 'Standings',
+    'played': 'Played',
+    'won': 'Won',
+    'draw': 'Draw',
+    'lost': 'Lost',
+    'goals': 'Goals',
+    'goal': 'Goal',
+    'points': 'Points',
+    'form': 'Form',
+    'ra': '#',
+    'diff': 'Diff',
+    'against': 'Against',
+    'f': 'W',
+    'd': 'D',
+    'l': 'L',
+    'pk': 'PK',
+
+    // 🧍‍♂️ Players & Coaches
+    'coach': 'Coach',
+    'players': 'Players',
+    'top_scorers': 'Top Scorers',
+    'top_assists': 'Top Assists',
+    'assists': 'Assists',
+
+    // 🔄 Match Events
+    'red_card': 'Red Card',
+    'yellow_card': 'Yellow Card',
+    'substitution': 'Substitution',
+    'substitutions': 'Substitutions',
+    'in': 'In',
+    'out': 'Out',
+    'penalty': 'Penalty',
+    'penalty_missed': 'Penalty Missed',
+    'event': 'Event',
+
+    // 🛠 Other
+    'no_data': 'No Data',
+    'error_occurred': 'An error occurred',
+    'error': 'Error',
+    'refresh': 'Refresh',
+    'retry': 'Retry',
+    'break': 'Break',
+    'unknown_round': 'Unknown Round',
+    'unknown': 'Unknown',
+    'next_round': 'Next Round',
+    'previous_round': 'Previous Round',
+    'finished_round': 'Finished Round',
+    'now': 'Now',
+    'from': 'From',
+
+    // 🕒 Time
+    'hours': 'Hours',
+    'hour': 'Hour',
+    'minutes': 'Minutes',
+    'minute': 'Minute',
+    'days': 'Days',
+    'day': 'Day',
+
+    // 📺 Streaming
+    'live_button': 'Lives',
+    'no_available_streams': 'No available streams at the moment!',
+    'tap_to_watch': 'Tap to watch stream',
+    'loading_ad': 'Loading ad...',
+
+    // 🏆 Teams & Info
+    'teams': 'Teams',
+    'team': 'Team',
+    'team_info': 'Team Info',
+    'about_team': 'About Team',
+    'championships': 'Championships',
+    'transfers': 'Transfers',
+    'season_statistics': 'Season Statistics',
+    'formations': 'Formations',
+
+    // ↔️ Direction
+    'left': 'Left',
+    'right': 'Right',
+  },
+
+  // 🟢 Arabic Translation (Structured the same as above for maintainability)
+  'ar': {
+    // 🔧 General & Settings
+    'settings': 'الإعدادات',
+    'dark_mode': 'الوضع الداكن',
+    'change_language': 'تغيير اللغة',
+    'language': 'اللغة',
+    'english': 'الإنجليزية',
+    'arabic': 'العربية',
+    'timezone': 'فارق التوقيت',
+    'options': 'الخيارات',
+
+    // 📅 Matches
+    'today_matches': 'مباريات اليوم',
+    'matches': 'المباريات',
+    'match_ended': 'انتهت المباراة',
+    'not_started': 'لم تبدأ بعد',
+    'live': 'مباشر',
+    'match_starts_in': 'تبدأ المباراة خلال:',
+    'match_in_progress': 'المباراة جارية',
+    'match_started': 'بدأت المباراة',
+    'end_first_half': 'انتهى الشوط الأول',
+    'start_second_half': 'بدأ الشوط الثاني',
+    'no_upcoming_matches': 'لا توجد مباريات قادمة',
+    'no_previous_matches': 'لا توجد مباريات سابقة',
+    'next_match': 'المباراة القادمة',
+    'last_match': 'المباراة الأخيرة',
+    'history': 'التاريخ',
+
+    // 📊 Match Filters
+    'show_all': 'عرض الكل',
+    'only_live': 'البث المباشر فقط',
+    'only_important': 'المهم فقط',
+    'search_here': ' ...ابحث هنا',
+    'pin': 'تثبيت في الأعلى',
+    'unpin': 'إلغاء التثبيت',
+    'no_live_matches': 'لا توجد مباريات مباشرة في الوقت الحالي!',
+
+    // 📰 News
+    'news': 'الأخبار',
+    'news_details': 'تفاصيل الخبر',
+    'main_news': 'الأخبار الرئيسية',
+    'important_news': 'الأخبار المهمة',
+    'latest_news': 'آخر الأخبار',
+    'source': 'المصدر',
+
+    // ⚽️ Match Details
+    'events': 'أحداث المباراة',
+    'statistics': 'الإحصائيات',
+    'summary': 'ملخص المباراة',
+    'details': 'التفاصيل',
+    'lineup': 'التشكيل',
+    'confrontations': 'المواجهات المباشرة',
+    'videos': 'الفيديوهات',
+    'match_details': 'تفاصيل المباراة',
+    'stadium': 'الملعب',
+    'round': 'الجولة',
+    'league': 'الدوري',
+    'championship': 'البطولة',
+    'channels': 'القنوات الناقله',
+
+    // 📈 Statistics
+    'possession': 'الاستحواذ',
+    'shots': 'التسديدات',
+    'shots_on_target': 'التسديدات على المرمى',
+    'corners': 'الركنيات',
+    'fouls': 'الأخطاء',
+    'yellow_cards': 'البطاقات الصفراء',
+    'red_cards': 'البطاقات الحمراء',
+    'offsides': 'التسللات',
+
+    // 📌 Table & Standings
+    'ranks': 'الترتيب',
+    'played': 'لعب',
+    'won': 'فاز',
+    'draw': 'تعادل',
+    'lost': 'خسر',
+    'goals': 'الأهداف',
+    'goal': 'هدف',
+    'points': 'النقاط',
+    'form': 'النتائج الأخيرة',
+    'ra': 'مركز',
+    'diff': 'الفارق',
+    'against': 'عليه',
+    'f': 'ف',
+    'd': 'ت',
+    'l': 'خ',
+    'pk': 'ضج',
+
+    // 🧍‍♂️ Players & Coaches
+    'coach': 'المدرب',
+    'players': 'اللاعبين',
+    'top_scorers': 'هدافين الدوري',
+    'top_assists': 'صانعي الأهداف',
+    'assists': 'صناعات',
+
+    // 🔄 Match Events
+    'red_card': 'بطاقة حمراء',
+    'yellow_card': 'بطاقة صفراء',
+    'substitution': 'تبديل',
+    'substitutions': 'التبديلات',
+    'in': 'دخول',
+    'out': 'خروج',
+    'penalty': 'ركلة جزاء',
+    'penalty_missed': 'ركلة جزاء مهدرة',
+    'event': 'حدث',
+
+    // 🛠 Other
+    'no_data': 'لا توجد بيانات',
+    'error_occurred': 'حدث خطأ',
+    'error': 'خطأ',
+    'refresh': 'تحديث',
+    'retry': 'إعادة المحاولة',
+    'break': 'استراحة',
+    'unknown_round': 'جولة غير معروفة',
+    'unknown': 'غير معروف',
+    'next_round': 'الجولات القادمة',
+    'previous_round': 'الجولات السابقة',
+    'finished_round': 'الجولات المنتهية',
+    'now': 'الآن',
+    'from': 'منذ',
+
+    // 🕒 Time
+    'hours': 'ساعات',
+    'hour': 'ساعة',
+    'minutes': 'دقائق',
+    'minute': 'دقيقة',
+    'days': 'أيام',
+    'day': 'يوم',
+
+    // 📺 Streaming
+    'live_button': 'البث المتاح',
+    'no_available_streams': 'لا توجد بثوث متاحه حاليا !',
+    'tap_to_watch': 'اضغط لمشاهدة البث',
+    'loading_ad': 'جارٍ تحميل الإعلان...',
+
+    // 🏆 Teams & Info
+    'teams': 'الفرق',
+    'team': 'الفريق',
+    'team_info': 'معلومات الفريق',
+    'about_team': 'عن الفريق',
+    'championships': 'البطولات',
+    'transfers': 'الانتقالات',
+    'season_statistics': 'إحصائيات الموسم',
+    'formations': 'خطة اللعب',
+
+    // ↔️ Direction
+    'left': 'يسار',
+    'right': 'يمين',
+  },
+};

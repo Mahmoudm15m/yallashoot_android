@@ -2,75 +2,40 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart'; // استيراد AdMob
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
-void openExternalVideoPlayer(BuildContext context, Map<String, dynamic> streamLinks) async {
-  try {
-    String json = jsonEncode(streamLinks);
-    String encoded = base64Url.encode(utf8.encode(json));
-    String url = 'uspl://open.app?data=$encoded';
 
-    await launchUrl(Uri.parse(url));
-  } catch (e) {
-    _showInstallDialog(context);
-  }
-}
-
-void _showInstallDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text('تعذر فتح المشغل'),
-        content: Text('يرجى تحميل المشغل لتشغيل الفيديو.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () {
-              launchUrl(Uri.parse('https://syria-live.fun/'));
-            },
-            child: Text('تحميل المشغل'),
-          ),
-        ],
-      );
-    },
-  );
-}
 
 class LivesScreen extends StatefulWidget {
-  const LivesScreen({super.key});
-
+  late final String lang ;
+  LivesScreen({
+    required this.lang
+});
   @override
   State<LivesScreen> createState() => _LivesScreenState();
 }
 
 class _LivesScreenState extends State<LivesScreen> {
   late Future<Map<String, dynamic>> futureResults;
-  ApiData apiData = ApiData();
+  late ApiData apiData ;
   Map<String, dynamic>? adsData;
 
-  // متغيرات الإعلان البيني
+
   InterstitialAd? _interstitialAd;
   bool _isInterstitialAdReady = false;
   Timer? _loadingCheckTimer;
 
-  // متغير لتقييد عرض الإعلان مرة واحدة كل دقيقة
   DateTime? _lastAdShownTime;
 
   @override
   void initState() {
     super.initState();
+    apiData = ApiData();
     futureResults = fetchLives();
     fetchAds();
-    // لم نعد نحمل الإعلان فوراً عند الدخول، بل حين الحاجة فقط
   }
 
   @override
@@ -91,7 +56,8 @@ class _LivesScreenState extends State<LivesScreen> {
 
   Future<void> fetchAds() async {
     try {
-      final api = ApiData();
+      late final api ;
+      api = ApiData();
       final data = await api.getAds();
       setState(() {
         adsData = data;
@@ -110,7 +76,7 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-  /// تحميل الإعلان البيني عند الحاجة
+
   void _loadInterstitialAd() {
     InterstitialAd.load(
       adUnitId: 'ca-app-pub-9181001319721306/8074630206',
@@ -134,7 +100,6 @@ class _LivesScreenState extends State<LivesScreen> {
         onAdFailedToLoad: (LoadAdError error) {
           _isInterstitialAdReady = false;
           _interstitialAd = null;
-          // نجرب إعادة التحميل بعد 30 ثانية
           Future.delayed(const Duration(seconds: 30), () {
             if (mounted) _loadInterstitialAd();
           });
@@ -146,7 +111,7 @@ class _LivesScreenState extends State<LivesScreen> {
   void _onMatchTap(Map<String, dynamic> match) {
     final now = DateTime.now();
 
-    // تحقق إن مرت دقيقة على آخر عرض
+
     if (_lastAdShownTime == null ||
         now.difference(_lastAdShownTime!) >= Duration(seconds: 40)) {
       _lastAdShownTime = now;
@@ -168,7 +133,6 @@ class _LivesScreenState extends State<LivesScreen> {
         );
       }
     } else {
-      // لم تمرّ دقيقة بعد: نتجاوز الإعلان وننتقل مباشرة
       final links = Map<String, String>.from(match["stream_links"]);
       Navigator.push(
         context,
@@ -231,11 +195,11 @@ class _LivesScreenState extends State<LivesScreen> {
             padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
                 Text(
-                  'جارٍ تحميل الإعلان...',
+                  appStrings[Localizations.localeOf(context).languageCode]!["loading_ad"]!,
                   style: TextStyle(fontSize: 16),
                 ),
               ],
@@ -251,7 +215,7 @@ class _LivesScreenState extends State<LivesScreen> {
     return Center(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("البث المتاح"),
+          title: Text(appStrings[Localizations.localeOf(context).languageCode]!["live_button"]!),
         ),
         body: RefreshIndicator(
           onRefresh: () async {
@@ -266,9 +230,9 @@ class _LivesScreenState extends State<LivesScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
-                return Center(child: Text('حدث خطأ: ${snapshot.error}'));
+                return Center(child: Text(' ${appStrings[Localizations.localeOf(context).languageCode]!["error"]!}: ${snapshot.error}'));
               } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Center(child: Text('لا توجد بيانات'));
+                return Center(child: Text(' ${appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!}'));
               } else {
                 var livesData = snapshot.data!;
                 final lives = livesData["lives"] as List;
@@ -276,8 +240,10 @@ class _LivesScreenState extends State<LivesScreen> {
                 final String? decodedAd = decodeBase64Ad(encodedAd);
 
                 if (lives.isEmpty) {
-                  return const Center(
-                    child: Text("لا توجد بثوث متاحه حاليا !"),
+                  return Center(
+                    child: Text(                      appStrings[Localizations.localeOf(context).languageCode]!["no_available_streams"]!,
+                      style: TextStyle(fontSize: 16),
+                    ),
                   );
                 }
 
@@ -310,10 +276,10 @@ class _LivesScreenState extends State<LivesScreen> {
                                   ),
                                 ],
                               ),
-                              const Expanded(
+                               Expanded(
                                 child: Center(
                                   child: Text(
-                                    "اضغط لمشاهدة البث",
+                                    appStrings[Localizations.localeOf(context).languageCode]!["tap_to_watch"]!,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(fontSize: 16),
                                   ),

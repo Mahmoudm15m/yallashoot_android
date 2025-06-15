@@ -1,11 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:yallashoot/screens/player_screen.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
-// Helper class to hold tab information
+
 class _TabInfo {
   final Tab tab;
   final Widget content;
@@ -14,20 +14,22 @@ class _TabInfo {
 
 class LeagueScreen extends StatefulWidget {
   final String id;
-  const LeagueScreen({Key? key, required this.id}) : super(key: key);
+  final String lang;
+  const LeagueScreen({Key? key, required this.id, required this.lang}) : super(key: key);
 
   @override
   State<LeagueScreen> createState() => _LeagueScreenState();
 }
 
 class _LeagueScreenState extends State<LeagueScreen> {
-  final ApiData api = ApiData();
+  late final ApiData api ;
   bool _isLoading = true;
   List<_TabInfo> _tabs = [];
 
   @override
   void initState() {
     super.initState();
+    api = ApiData();
     _loadAllData();
   }
 
@@ -89,7 +91,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
         ((matchesContent['coming']?['data'] as List?)?.isNotEmpty == true ||
             (matchesContent['end']?['data'] as List?)?.isNotEmpty == true)) {
       availableTabs.add(_TabInfo(
-        tab: const Tab(text: 'المباريات'),
+        tab: Tab(text: appStrings[Localizations.localeOf(context).languageCode]!["matches"]!),
         content: buildMatchesTab(matchesContent),
       ));
     }
@@ -102,7 +104,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       final bool hasStandings = (ranksContent['standings']?['groups'] as Map?)?.isNotEmpty == true;
       if (hasLeague || hasGroups || hasStandings) {
         availableTabs.add(_TabInfo(
-          tab: const Tab(text: 'الترتيب'),
+          tab: Tab(text: appStrings[Localizations.localeOf(context).languageCode]!["ranks"]!),
           content: buildRankingTab(ranksContent),
         ));
       }
@@ -112,7 +114,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     final scorersContent = scorers?['data'];
     if (scorersContent != null && (scorersContent['scorers'] as List?)?.isNotEmpty == true) {
       availableTabs.add(_TabInfo(
-        tab: const Tab(text: 'الهدافون'),
+        tab: Tab(text: appStrings[Localizations.localeOf(context).languageCode]!["top_scorers"]!),
         content: buildScorersTab(scorersContent),
       ));
     }
@@ -121,7 +123,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     final assistsContent = assists?['data'] as List?;
     if (assistsContent != null && assistsContent.isNotEmpty) {
       availableTabs.add(_TabInfo(
-        tab: const Tab(text: 'صناع اللعب'),
+        tab: Tab(text: appStrings[Localizations.localeOf(context).languageCode]!["top_assists"]!),
         content: buildAssistsTab(assistsContent),
       ));
     }
@@ -133,7 +135,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
   Map<String, List<dynamic>> groupGamesByRound(List<dynamic> games) {
     final Map<String, List<dynamic>> grouped = {};
     for (var game in games) {
-      final round = game['round'] as String? ?? 'جولة غير محددة';
+      final round = game['round'] as String? ?? appStrings[Localizations.localeOf(context).languageCode]!["unknown_round"]!;
       grouped.putIfAbsent(round, () => []).add(game);
     }
     return grouped;
@@ -190,9 +192,9 @@ class _LeagueScreenState extends State<LeagueScreen> {
     return ListView(
       padding: const EdgeInsets.all(8),
       children: [
-        buildStickyGamesSection('القادمة', groupGamesByRound(coming)),
+        buildStickyGamesSection(appStrings[Localizations.localeOf(context).languageCode]!["next_round"]!, groupGamesByRound(coming)),
         const Divider(),
-        buildStickyGamesSection('المنتهية', groupGamesByRound(ended)),
+        buildStickyGamesSection(appStrings[Localizations.localeOf(context).languageCode]!["finished_round"]!, groupGamesByRound(ended)),
       ],
     );
   }
@@ -220,9 +222,6 @@ class _LeagueScreenState extends State<LeagueScreen> {
   }
 
   Widget buildRankingTab(Map<String, dynamic> data) {
-    // Logic for building ranking UI is complex and has multiple paths.
-    // It's kept largely the same, just with image proxy removal.
-    // The main change is that this function is now only called if data is valid.
     final leagueList = data['league'] as List?;
     final groupsMap = data['groups'] as Map?;
     final standingsGroups = data['standings']?['groups'] as Map?;
@@ -242,7 +241,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       return _buildLeagueUi(leagueList);
     }
 
-    return const Center(child: Text("لا توجد بيانات ترتيب لعرضها."));
+    return Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!));
   }
 
   Widget _buildLeagueUi(List<dynamic> leagueList) {
@@ -253,9 +252,9 @@ class _LeagueScreenState extends State<LeagueScreen> {
         final header = Container(
           height: 50, color: Colors.blueGrey,
           child: Row(children: [
-            _buildHeaderCell('مركز', width: unitWidth),
-            _buildHeaderCell('الفريق', width: unitWidth * 3),
-            for (var title in ['لعب', 'فوز', 'تعادل', 'خسارة', 'له', 'عليه', 'فرق', 'نقاط'])
+            _buildHeaderCell(appStrings[Localizations.localeOf(context).languageCode]!["ra"]!, width: unitWidth),
+            _buildHeaderCell(appStrings[Localizations.localeOf(context).languageCode]!["team"]!, width: unitWidth * 3),
+            for (var title in [appStrings[Localizations.localeOf(context).languageCode]!["played"]!, appStrings[Localizations.localeOf(context).languageCode]!["won"]!, appStrings[Localizations.localeOf(context).languageCode]!["draw"]!, appStrings[Localizations.localeOf(context).languageCode]!["lost"]!, appStrings[Localizations.localeOf(context).languageCode]!["goals"]!,appStrings[Localizations.localeOf(context).languageCode]!["diff"]!, appStrings[Localizations.localeOf(context).languageCode]!["points"]!])
               _buildHeaderCell(title, width: unitWidth),
           ]),
         );
@@ -264,13 +263,13 @@ class _LeagueScreenState extends State<LeagueScreen> {
           final index = entry.key;
           final item = entry.value;
           final imgUrl = 'https://imgs.ysscores.com/teams/64/${item['team_name']['image']}';
-
+          final Locale currentLocale = Localizations.localeOf(context);
           return Container(
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade300))),
             child: Row(children: [
               _buildCell((index + 1).toString(), width: unitWidth),
               InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: item["team_id"].toString()))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: item["team_id"].toString(), lang: currentLocale.languageCode,))),
                 child: Container(
                   width: unitWidth * 3, padding: const EdgeInsets.all(8.0),
                   child: Row(children: [
@@ -280,7 +279,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                   ]),
                 ),
               ),
-              for (var key in ['play', 'wins', 'draw', 'lose', 'for', 'against', 'diff', 'points'])
+              for (var key in ['play', 'wins', 'draw', 'lose', 'for', 'diff', 'points'])
                 _buildCell(item[key].toString(), width: unitWidth),
             ]),
           );
@@ -312,9 +311,9 @@ class _LeagueScreenState extends State<LeagueScreen> {
                       Container(
                         height: 50, color: Colors.blueGrey,
                         child: Row(children: [
-                          _buildHeaderCell('مركز', width: unitWidth),
-                          _buildHeaderCell('الفريق', width: unitWidth * 3),
-                          for (var title in ['لعب', 'فوز', 'تعادل', 'خسارة', 'له', 'عليه', 'فرق', 'نقاط'])
+                          _buildHeaderCell(appStrings[Localizations.localeOf(context).languageCode]!["ra"]!, width: unitWidth),
+                          _buildHeaderCell(appStrings[Localizations.localeOf(context).languageCode]!["team"]!, width: unitWidth * 3),
+                          for (var title in [appStrings[Localizations.localeOf(context).languageCode]!["played"]!, appStrings[Localizations.localeOf(context).languageCode]!["won"]!, appStrings[Localizations.localeOf(context).languageCode]!["draw"]!, appStrings[Localizations.localeOf(context).languageCode]!["lost"]!, appStrings[Localizations.localeOf(context).languageCode]!["goals"]!,appStrings[Localizations.localeOf(context).languageCode]!["diff"]!, appStrings[Localizations.localeOf(context).languageCode]!["points"]!])
                             _buildHeaderCell(title, width: unitWidth),
                         ]),
                       ),
@@ -324,13 +323,13 @@ class _LeagueScreenState extends State<LeagueScreen> {
                         final imgHex = item['team_name']?['image'] ?? '';
                         final imgUrl = 'https://imgs.ysscores.com/teams/64/$imgHex';
                         final teamTitle = item['team_name']?['title'] ?? '';
-
+                        final Locale currentLocale = Localizations.localeOf(context);
                         return Container(
                           decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade300))),
                           child: Row(children: [
                             _buildCell('${idx + 1}', width: unitWidth),
                             InkWell(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: item["team_id"].toString()))),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: item["team_id"].toString(), lang: currentLocale.languageCode,))),
                               child: Container(
                                 width: unitWidth * 3, padding: const EdgeInsets.all(8.0),
                                 child: Row(children: [
@@ -340,7 +339,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                                 ]),
                               ),
                             ),
-                            for (var key in ['play', 'wins', 'draw', 'lose', 'for', 'against', 'diff', 'points'])
+                            for (var key in ['play', 'wins', 'draw', 'lose', 'for', 'diff', 'points'])
                               _buildCell(item[key].toString(), width: unitWidth),
                           ]),
                         );
@@ -367,19 +366,20 @@ class _LeagueScreenState extends State<LeagueScreen> {
         final sc = scorers[index] as Map<String, dynamic>;
         final player = sc['player_info'] as Map<String, dynamic>;
         final imageUrl = 'https://imgs.ysscores.com/player/150/${player['image']}';
+        final Locale currentLocale = Localizations.localeOf(context);
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ListTile(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(playerId: sc["player_id"].toString()))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(playerId: sc["player_id"].toString(), lang: currentLocale.languageCode,))),
             leading: CircleAvatar(backgroundImage: NetworkImage(imageUrl), radius: 20),
             title: Text(player['title']),
             subtitle: Text(player['team_name']),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('أهداف: ${sc['goals']}'),
+                Text('${appStrings[Localizations.localeOf(context).languageCode]!["goals"]!}: ${sc['goals']}'),
                 if ((sc['score_penalty'] as int? ?? 0) > 0)
-                  Text('ض.ج: ${sc['score_penalty']}'),
+                  Text('${appStrings[Localizations.localeOf(context).languageCode]!["pk"]!}: ${sc['score_penalty']}'),
               ],
             ),
           ),
@@ -397,14 +397,15 @@ class _LeagueScreenState extends State<LeagueScreen> {
         final a = assists[index] as Map<String, dynamic>;
         final player = a['player_info'] as Map<String, dynamic>;
         final imageUrl = 'https://imgs.ysscores.com/player/150/${player['image']}';
+        final Locale currentLocale = Localizations.localeOf(context);
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ListTile(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(playerId: a["player_id"].toString()))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(playerId: a["player_id"].toString(), lang: currentLocale.languageCode,))),
             leading: CircleAvatar(backgroundImage: NetworkImage(imageUrl), radius: 20),
             title: Text(player['title']),
             subtitle: Text(player['team_name']),
-            trailing: Text('صناعات: ${a['assist']}'),
+            trailing: Text('${appStrings[Localizations.localeOf(context).languageCode]!["assists"]!}: ${a['assist']}'),
           ),
         );
       },
@@ -415,15 +416,15 @@ class _LeagueScreenState extends State<LeagueScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('الدوري')),
+        appBar: AppBar(title: Text(appStrings[Localizations.localeOf(context).languageCode]!["league"]!)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_tabs.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('الدوري')),
-        body: const Center(child: Text('لا توجد بيانات متاحة لهذا الدوري')),
+        appBar: AppBar(title: Text(appStrings[Localizations.localeOf(context).languageCode]!["league"]!)),
+        body: Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!)),
       );
     }
 
@@ -431,9 +432,9 @@ class _LeagueScreenState extends State<LeagueScreen> {
       length: _tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('الدوري'),
+          title: Text(appStrings[Localizations.localeOf(context).languageCode]!["league"]!),
           bottom: TabBar(
-            isScrollable: true, // يجعل التبويبات قابلة للتمرير إذا كانت كثيرة
+            isScrollable: true,
             tabs: _tabs.map((t) => t.tab).toList(),
           ),
         ),

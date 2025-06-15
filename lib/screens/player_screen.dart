@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class PlayerScreen extends StatefulWidget {
   final String playerId;
-  const PlayerScreen({Key? key, required this.playerId}) : super(key: key);
+  final String lang;
+  const PlayerScreen({Key? key, required this.playerId, required this.lang}) : super(key: key);
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  final ApiData api = ApiData();
+  late final ApiData api;
   late Future<Map<String, dynamic>> futurePlayer;
 
   @override
   void initState() {
     super.initState();
+    api = ApiData();
     futurePlayer = api.getPlayerInfo(widget.playerId).then((v) => v as Map<String, dynamic>);
   }
 
@@ -30,16 +33,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  Widget _statChip(String label, dynamic value) {
+  // MODIFIED: Made the stat chip theme-aware
+  Widget _statChip(BuildContext context, String label, dynamic value) {
+    final theme = Theme.of(context);
     return Chip(
-      label: Text('$label: ${value ?? 0}', style: const TextStyle(fontSize: 12)),
+      label: Text(
+        '$label: ${value ?? 0}',
+        style: TextStyle(
+          fontSize: 12,
+          color: theme.colorScheme.onSecondaryContainer, // Adapts text color
+        ),
+      ),
       visualDensity: VisualDensity.compact,
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: theme.colorScheme.secondaryContainer, // Adapts background color
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Get the current theme to use its colors
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return FutureBuilder<Map<String, dynamic>>(
       future: futurePlayer,
       builder: (context, snap) {
@@ -47,7 +63,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snap.hasError || snap.data == null || snap.data!['data'] == null) {
-          return const Scaffold(body: Center(child: Text('خطأ في جلب بيانات اللاعب')));
+          return Scaffold(body: Center(child: Text(appStrings[Localizations.localeOf(context).languageCode]!["error"]!)));
         }
 
         // ------------- data -------------
@@ -81,8 +97,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             headerSliverBuilder: (context, _) {
               return [
                 SliverAppBar(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  expandedHeight: 320, // أعلى لعرض الغلاف بالكامل
+                  backgroundColor: theme.primaryColor,
+                  expandedHeight: 320,
                   pinned: true,
                   stretch: true,
                   elevation: 0,
@@ -123,7 +139,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
+                              // MODIFIED: Used theme color for the border
+                              border: Border.all(color: theme.cardColor, width: 4),
                               boxShadow: const [
                                 BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
                               ],
@@ -141,14 +158,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
               padding: const EdgeInsets.only(top: 24),
               children: [
                 const SizedBox(height: 8),
-                // name & number (مكررة لأعلى الوضوح)
                 Center(
                   child: Column(
                     children: [
-                      Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(name, style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('#$number • $position',
-                          style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                      // MODIFIED: Used theme text color
+                      Text(
+                        '#$number • $position',
+                        style: textTheme.titleMedium?.copyWith(color: textTheme.bodySmall?.color),
+                      ),
                     ],
                   ),
                 ),
@@ -157,14 +176,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 if (teamName.isNotEmpty)
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: teamId)));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        final Locale currentLocale = Localizations.localeOf(context);
+                        return TeamScreen(
+                          teamID: teamId,
+                          lang: currentLocale.languageCode,
+                        );
+                      }));
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ClipOval(child: Image.network(teamImgUrl, width: 40, height: 40, fit: BoxFit.cover)),
                         const SizedBox(width: 8),
-                        Text(teamName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        Text(teamName, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -181,7 +206,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       if (country.isNotEmpty) _infoChip(Icons.flag, country),
                       if (height.isNotEmpty) _infoChip(Icons.height, '$height cm'),
                       if (weight.isNotEmpty) _infoChip(Icons.monitor_weight, '$weight kg'),
-                      if (foot.isNotEmpty) _infoChip(Icons.sports, foot == 'L' ? 'يسار' : 'يمين'),
+                      if (foot.isNotEmpty) _infoChip(Icons.sports, foot == 'L' ? appStrings[Localizations.localeOf(context).languageCode]!["left"]! : appStrings[Localizations.localeOf(context).languageCode]!["right"]!),
                     ],
                   ),
                 ),
@@ -193,8 +218,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('إحصائيات الموسم',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(appStrings[Localizations.localeOf(context).languageCode]!["season_statistics"]!, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         ...stats.map((st) {
                           final league = (st['league'] as Map<String, dynamic>?)?['title'] as String? ?? '';
@@ -206,18 +230,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(league,
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  Text(league, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 6),
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 4,
                                     children: [
-                                      _statChip('مباريات', st['appearances']),
-                                      _statChip('أهداف', st['goals']),
-                                      _statChip('صناعات', st['assist']),
-                                      _statChip('بطاقات صفراء', st['yellow_card']),
-                                      _statChip('بطاقات حمراء', st['red_card']),
+                                      // MODIFIED: Passed context to _statChip
+                                      _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["matches"]!, st['appearances']),
+                                      _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["goals"]!, st['goals']),
+                                      _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["assists"]!, st['assist']),
+                                      _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["yellow_cards"]!, st['yellow_card']),
+                                      _statChip(context, appStrings[Localizations.localeOf(context).languageCode]!["red_cards"]!, st['red_card']),
                                     ],
                                   ),
                                 ],
@@ -236,8 +260,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('الانتقالات',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(appStrings[Localizations.localeOf(context).languageCode]!["transfers"]!, style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         ...transfers.map((t) {
                           final inTeam = (t['team_in'] as Map<String, dynamic>?)?['title'] as String? ?? '';
@@ -248,9 +271,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           final to = t['date_to'] as String? ?? '';
                           final type = t['trans'] as String? ?? '';
                           final tid = (t['team_in'] as Map<String, dynamic>?)?['row_id']?.toString() ?? '';
+                          final Locale currentLocale = Localizations.localeOf(context);
                           return GestureDetector(
                             onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: tid)));
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => TeamScreen(teamID: tid, lang: currentLocale.languageCode,)));
                             },
                             child: Card(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -261,7 +285,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ),
                                 title: Text(inTeam),
                                 subtitle: Text('$from → $to'),
-                                trailing: Text(type, style: const TextStyle(color: Colors.grey)),
+                                // MODIFIED: Used theme color for the trailing text
+                                trailing: Text(type, style: TextStyle(color: textTheme.bodySmall?.color)),
                               ),
                             ),
                           );

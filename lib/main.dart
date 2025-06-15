@@ -1,63 +1,138 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:yallashoot/locator.dart';
 import 'package:yallashoot/screens/home_screen.dart';
 import 'package:yallashoot/screens/news_screen.dart';
 import 'package:yallashoot/screens/ranks_screen.dart';
 import 'package:yallashoot/screens/settings_screen.dart';
+import 'package:yallashoot/settings_provider.dart';
+import 'package:yallashoot/strings/languages.dart';
 import 'api/main_api.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
+  // التأكد من تهيئة Flutter قبل أي شيء
   WidgetsFlutterBinding.ensureInitialized();
+  // تهيئة إعلانات جوجل
   MobileAds.instance.initialize();
-  await initializeDateFormatting('en', '');
-  final prefs = await SharedPreferences.getInstance();
-  final isDarkMode = prefs.getBool('isDarkMode') ?? false;
-  runApp(MyApp(initialDarkMode: isDarkMode));
+  // تفعيل الـ Service Locator لتسجيل الخدمات
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.init();
+  setupLocator(settingsProvider);
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: locator<SettingsProvider>(),
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
-  final bool initialDarkMode;
-  const MyApp({
-    super.key,
-    required this.initialDarkMode,
-  });
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      locale: settingsProvider.locale,
+      themeMode: settingsProvider.themeMode,
+      //
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      theme: ThemeData(
+        useMaterial3: true,
+        primaryColor: Colors.teal[800],
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.tealAccent,
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+        primaryColor: Colors.teal[800],
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal[800]!, brightness: Brightness.dark),
+      ),
+      home: const MainScreen(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  bool _isDarkMode = false;
-  final ApiData apiData = ApiData();
-  Timer? _adsRefreshTimer;
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+  Timer? _retryTimer;
+  int width = 500;
+
+
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   void initState() {
     super.initState();
-    _isDarkMode = widget.initialDarkMode;
     fetchUpdates();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      width = MediaQuery.of(context).size.width.toInt();
+      _loadBannerAd();
+    });
   }
 
   @override
   void dispose() {
-    _adsRefreshTimer?.cancel();
+    _retryTimer?.cancel();
+    _bannerAd?.dispose();
     super.dispose();
   }
 
+  void _loadBannerAd() {
+    _bannerAd?.dispose();
+    _isBannerAdLoaded = false;
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-9181001319721306/2051538525',
+      size: AdSize(width: width, height: 80),
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (Ad ad) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          ad.dispose();
+          _retryTimer = Timer(const Duration(seconds: 30), _loadBannerAd);
+        },
+      ),
+    );
+    _bannerAd!.load();
+  }
+
   Future<void> fetchUpdates() async {
-    const int currentVersion = 7;
+    const int currentVersion = 8;
     try {
-      final data = await apiData.checkUpdate(currentVersion);
+      final data = await locator<ApiData>().checkUpdate(currentVersion);
       if (data['ok'] == true && data['version'] > currentVersion) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          final ctx = _navigatorKey.currentContext;
-          if (ctx == null) return;
+          final ctx = context;
+          if (!ctx.mounted) return;
           showDialog(
             context: ctx,
             barrierDismissible: false,
@@ -77,9 +152,8 @@ class _MyAppState extends State<MyApp> {
                 actions: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.blueGrey,
-                      borderRadius: BorderRadius.circular(20)
-                    ),
+                        color: Colors.blueGrey,
+                        borderRadius: BorderRadius.circular(20)),
                     alignment: Alignment.center,
                     child: TextButton(
                       onPressed: () async {
@@ -91,11 +165,13 @@ class _MyAppState extends State<MyApp> {
                           );
                         }
                       },
-                      child: Text('تحديث الآن' , style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold
-                      ),),
+                      child: const Text(
+                        'تحديث الآن',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -109,139 +185,44 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _toggleDarkMode(bool v) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', v);
-    setState(() => _isDarkMode = v);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('ar'),
-      supportedLocales: const [
-        Locale('en'),
-        Locale('ar'),
-      ],
-      localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(useMaterial3: true),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: MainScreen(
-        isDarkMode: _isDarkMode,
-        toggleDarkMode: _toggleDarkMode,
-      ),
-    );
+    // اللغة تتغير تلقائياً لأن MaterialApp يراقب الـ Provider
+    final currentLocale = Localizations.localeOf(context);
 
-  }
-}
+    // تم حذف كود تحديث الـ API لأنه يحدث الآن تلقائياً داخل ApiData
 
-class MainScreen extends StatefulWidget {
-  final bool isDarkMode;
-  final Function(bool) toggleDarkMode;
-
-  const MainScreen({
-    super.key,
-    required this.isDarkMode,
-    required this.toggleDarkMode,
-  });
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  BannerAd? _bannerAd;
-  bool _isBannerAdLoaded = false;
-  Timer? _retryTimer;
-
-  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-  }
-
-  @override
-  void dispose() {
-    _retryTimer?.cancel();
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  void _loadBannerAd() {
-    _bannerAd?.dispose();
-    _isBannerAdLoaded = false;
-
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-9181001319721306/2051538525',
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          setState(() {
-            _isBannerAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          ad.dispose();
-          _retryTimer = Timer(const Duration(seconds: 30), () {
-            _loadBannerAd();
-          });
-        },
-      ),
-    );
-
-    _bannerAd!.load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final screens = <Widget>[
-      const HomeScreen(),
-      const RanksScreen(),
-      const NewsScreen(),
-      SettingsScreen(
-        isDarkMode: widget.isDarkMode,
-        onThemeChanged: widget.toggleDarkMode,
-      ),
+      HomeScreen(),
+      RanksScreen(lang: currentLocale.languageCode),
+      NewsScreen(lang: currentLocale.languageCode),
+      const SettingsScreen(),
     ];
 
     return Scaffold(
-      body: Column(
+      body: screens[_selectedIndex],
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(child: screens[_selectedIndex]),
           if (_isBannerAdLoaded && _bannerAd != null)
-            Container(
+            SizedBox(
               width: _bannerAd!.size.width.toDouble(),
               height: _bannerAd!.size.height.toDouble(),
-              alignment: Alignment.center,
               child: AdWidget(ad: _bannerAd!),
             ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black,
-        unselectedItemColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey[400]
-            : Colors.grey[800],
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'مباريات اليوم'),
-          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'الترتيب'),
-          BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: 'الأخبار'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'الإعدادات'),
+          BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Colors.grey,
+            items: [
+              BottomNavigationBarItem(icon: const Icon(Icons.home), label: appStrings[currentLocale.languageCode]?["today_matches"]),
+              BottomNavigationBarItem(icon: const Icon(Icons.leaderboard), label: appStrings[currentLocale.languageCode]?["ranks"]),
+              BottomNavigationBarItem(icon: const Icon(Icons.newspaper), label: appStrings[currentLocale.languageCode]?["news"]),
+              BottomNavigationBarItem(icon: const Icon(Icons.settings), label: appStrings[currentLocale.languageCode]?["settings"]),
+            ],
+          ),
         ],
       ),
     );

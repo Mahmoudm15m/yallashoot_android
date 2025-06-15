@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:yallashoot/screens/league_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class TeamScreen extends StatefulWidget {
   final String teamID;
-  const TeamScreen({Key? key, required this.teamID}) : super(key: key);
+  final String lang ;
+  const TeamScreen({Key? key, required this.teamID, required this.lang}) : super(key: key);
 
   @override
   State<TeamScreen> createState() => _TeamScreenState();
 }
 
 class _TeamScreenState extends State<TeamScreen> {
-  final ApiData api = ApiData();
+  late final ApiData api ;
   late Future<Map<String, dynamic>> futureInfo;
   late Future<Map<String, dynamic>> futureMatches;
 
   @override
   void initState() {
     super.initState();
+    api = ApiData();
     futureInfo =
         api.getTeamInfo(widget.teamID).then((v) => v as Map<String, dynamic>);
     futureMatches =
@@ -29,7 +32,7 @@ class _TeamScreenState extends State<TeamScreen> {
   Map<String, List<dynamic>> groupByPhase(List<dynamic> list, String key) {
     final Map<String, List<dynamic>> grouped = {};
     for (var item in list) {
-      final phase = item[key]?.toString() ?? 'غير محدد';
+      final phase = item[key]?.toString() ?? appStrings[Localizations.localeOf(context).languageCode]!["unknown"]!;
       grouped.putIfAbsent(phase, () => []).add(item);
     }
     return grouped;
@@ -156,12 +159,12 @@ class _TeamScreenState extends State<TeamScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('معلومات الفريق',
+          title: Text(appStrings[Localizations.localeOf(context).languageCode]!["team_info"]!,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           bottom: TabBar(
-            tabs: const [
-              Tab(icon: Icon(Icons.info_outline), text: 'عن الفريق'),
-              Tab(icon: Icon(Icons.event_note), text: 'جدول المباريات'),
+            tabs: [
+              Tab(icon: Icon(Icons.info_outline), text: appStrings[Localizations.localeOf(context).languageCode]!["about_team"]!),
+              Tab(icon: Icon(Icons.event_note), text: appStrings[Localizations.localeOf(context).languageCode]!["matches"]!),
             ],
             indicatorColor: indicatorColor,
             indicatorWeight: 4,
@@ -184,7 +187,10 @@ class _TeamScreenState extends State<TeamScreen> {
                 if (snap.hasError ||
                     snap.data == null ||
                     snap.data!['data'] == null) {
-                  return const Center(child: Text('خطأ في جلب معلومات الفريق'));
+                  return Center(child: Text(
+                    appStrings[Localizations.localeOf(context).languageCode]!["error"]!,
+                    style: const TextStyle(fontSize: 16, color: Colors.red),
+                  ));
                 }
                 final info = snap.data!['data'] as Map<String, dynamic>;
                 final about = info['about'] as String? ?? '';
@@ -224,7 +230,7 @@ class _TeamScreenState extends State<TeamScreen> {
                       const SizedBox(height: 24),
                       Align(
                         alignment: Alignment.center,
-                        child: Text('البطولات',
+                        child: Text(appStrings[Localizations.localeOf(context).languageCode]!["championships"]!,
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
                       ),
@@ -247,7 +253,8 @@ class _TeamScreenState extends State<TeamScreen> {
                                 child: IconButton(
                                   onPressed: (){
                                     Navigator.push(context, MaterialPageRoute(builder: (context){
-                                      return LeagueScreen(id: c["url_id"].toString());
+                                      final Locale currentLocale = Localizations.localeOf(context);
+                                      return LeagueScreen(id: c["url_id"].toString(), lang: currentLocale.languageCode,);
                                     }));
                                   },
                                   icon: Column(
@@ -283,7 +290,10 @@ class _TeamScreenState extends State<TeamScreen> {
                 if (snap.hasError ||
                     snap.data == null ||
                     snap.data!['data'] == null) {
-                  return const Center(child: Text('خطأ في جلب المباريات'));
+                  return Center(child: Text(
+                    appStrings[Localizations.localeOf(context).languageCode]!["error"]!,
+                    style: const TextStyle(fontSize: 16, color: Colors.red),
+                  ));
                 }
                 final data = snap.data!['data'] as Map<String, dynamic>;
                 final coming =
@@ -293,9 +303,9 @@ class _TeamScreenState extends State<TeamScreen> {
                 return SingleChildScrollView(
                   child: Column(
                     children: [
-                      buildMatchesSection(context, 'المباريات القادمة', coming),
+                      buildMatchesSection(context, appStrings[Localizations.localeOf(context).languageCode]!["next_round"]!, coming),
                       const Divider(height: 1, thickness: 1),
-                      buildMatchesSection(context, 'المباريات المنتهية', ended),
+                      buildMatchesSection(context, appStrings[Localizations.localeOf(context).languageCode]!["finished_round"]!, ended),
                     ],
                   ),
                 );

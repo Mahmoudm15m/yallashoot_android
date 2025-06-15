@@ -1,0 +1,2 @@
+D:/work/yallashoot/android/app/.cxx/Debug/6m4m4x6t/x86/CMakeFiles/edit_cache.dir
+D:/work/yallashoot/android/app/.cxx/Debug/6m4m4x6t/x86/CMakeFiles/rebuild_cache.dir

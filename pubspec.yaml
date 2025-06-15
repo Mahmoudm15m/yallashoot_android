@@ -47,6 +47,8 @@ dependencies:
   google_mobile_ads: ^6.0.0
 
   cupertino_icons: ^1.0.8
+  provider: ^6.1.5
+  get_it: ^8.0.3
 
 dev_dependencies:
   flutter_test:
@@ -77,9 +79,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #  - packages/intl/data/
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

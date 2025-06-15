@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:yallashoot/screens/match_details.dart';
 import 'package:yallashoot/screens/news_details_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class NewsScreen extends StatefulWidget {
-  const NewsScreen({Key? key}) : super(key: key);
+  late final String lang ;
+  NewsScreen({
+    required this.lang,
+});
 
   @override
   State<NewsScreen> createState() => _NewsScreenState();
@@ -12,7 +15,7 @@ class NewsScreen extends StatefulWidget {
 
 class _NewsScreenState extends State<NewsScreen> {
   late Future<Map<String, dynamic>> futureResults;
-  ApiData apiData = ApiData();
+  late ApiData apiData ;
 
   Future<Map<String, dynamic>> fetchNews() async {
     try {
@@ -26,6 +29,7 @@ class _NewsScreenState extends State<NewsScreen> {
   @override
   void initState() {
     super.initState();
+    apiData = ApiData();
     futureResults = fetchNews();
   }
 
@@ -39,9 +43,12 @@ class _NewsScreenState extends State<NewsScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
-              return Center(child: Text('حدث خطأ: ${snapshot.error}'));
+              return Center(child: Text('${appStrings[Localizations.localeOf(context).languageCode]!["error"]!}: ${snapshot.error}'));
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('لا توجد بيانات'));
+              return Center(child: Text(
+                appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ));
             } else {
               var newsData = snapshot.data!['news']['data'];
               var mainNews = newsData['main'];
@@ -55,15 +62,15 @@ class _NewsScreenState extends State<NewsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // قسم الأخبار الرئيسية
-                      Text('الأخبار الرئيسية',
+                      Text(appStrings[Localizations.localeOf(context).languageCode]!["main_news"]!,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       IconButton(
                         padding: EdgeInsets.zero,
                         onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (context){
-                            return NewsDetailsScreen(id: mainNews["id"].toString(), img:'https://imgs.ysscores.com/news/820/${mainNews['image']}');
+                            final Locale currentLocale = Localizations.localeOf(context);
+                            return NewsDetailsScreen(id: mainNews["id"].toString(), img:'https://imgs.ysscores.com/news/820/${mainNews['image']}', lang: currentLocale.languageCode,);
                           }));
                         },
                         icon: Card(
@@ -103,7 +110,7 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                       const SizedBox(height: 16),
                       // قسم الأخبار الهامة
-                      Text('أخبار هامة',
+                      Text(appStrings[Localizations.localeOf(context).languageCode]!["important_news"]!,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -116,8 +123,9 @@ class _NewsScreenState extends State<NewsScreen> {
                             return IconButton(
                               onPressed: (){
                                 Navigator.push(context, MaterialPageRoute(builder: (context){
+                                  final Locale currentLocale = Localizations.localeOf(context);
                                   return NewsDetailsScreen(id: item["id"].toString(),
-                                      img:  'https://imgs.ysscores.com/news/820/${item['image']}');
+                                      img:  'https://imgs.ysscores.com/news/820/${item['image']}', lang: currentLocale.languageCode,);
                                 }));
                               },
                               padding: EdgeInsets.zero,
@@ -171,7 +179,7 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                       const SizedBox(height: 16),
                       // قسم آخر الأخبار
-                      Text('آخر الأخبار',
+                      Text(appStrings[Localizations.localeOf(context).languageCode]!["latest_news"]!,
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       ListView.builder(
@@ -208,8 +216,9 @@ class _NewsScreenState extends State<NewsScreen> {
                             ),
                             onPressed: (){
                               Navigator.push(context, MaterialPageRoute(builder: (context){
+                                final Locale currentLocale = Localizations.localeOf(context);
                                 return NewsDetailsScreen(id: item["id"].toString(),
-                                    img:  'https://imgs.ysscores.com/news/820/${item['image']}');
+                                    img:  'https://imgs.ysscores.com/news/820/${item['image']}', lang: currentLocale.languageCode,);
                               }));
                             },
                             padding: EdgeInsets.zero,

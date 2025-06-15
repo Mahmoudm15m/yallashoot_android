@@ -4,16 +4,20 @@ import 'package:yallashoot/screens/league_screen.dart';
 import 'package:yallashoot/screens/player_screen.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
+import '../strings/languages.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+  late final String lang ;
+  SearchScreen({
+    required this.lang,
+});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final ApiData api = ApiData();
+  late final ApiData api;
   late Future<Map<String, dynamic>> futureResults;
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
@@ -26,6 +30,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
+    api = ApiData();
     futureResults = fetchSearch();
   }
 
@@ -110,11 +115,11 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: TextField(
           controller: _controller,
-          decoration: const InputDecoration(
-            hintText: 'ابحث هنا...',
+          decoration: InputDecoration(
+            hintText: appStrings[Localizations.localeOf(context).languageCode]!["search_here"]!,
             border: InputBorder.none,
             isDense: true,
-            contentPadding: EdgeInsets.symmetric(vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
           ),
           onChanged: _onSearchDebounced,
         ),
@@ -126,7 +131,10 @@ class _SearchScreenState extends State<SearchScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError || snap.data == null || snap.data!['data'] == null) {
-            return const Center(child: Text('خطأ في جلب النتائج'));
+            return Center(child: Text(
+              appStrings[Localizations.localeOf(context).languageCode]!["error"]!,
+              style: const TextStyle(color: Colors.red),
+            ));
           }
           final data = snap.data!['data'] as Map<String, dynamic>;
           final champs = List<Map<String, dynamic>>.from(data['championship'] ?? []);
@@ -138,7 +146,7 @@ class _SearchScreenState extends State<SearchScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSection<Map<String, dynamic>>(
-                  title: 'الدوريات',
+                  title: appStrings[Localizations.localeOf(context).languageCode]!["championships"]!,
                   items: champs,
                   controller: _champController,
                   itemBuilder: (item) {
@@ -149,7 +157,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     return InkWell(
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return LeagueScreen(id: item["name"]['url_id'].toString());
+                          final Locale currentLocale = Localizations.localeOf(context);
+                          return LeagueScreen(id: item["name"]['url_id'].toString(), lang: currentLocale.languageCode,);
                         }));
                       },
                       child: Column(
@@ -172,7 +181,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
                 _buildSection<Map<String, dynamic>>(
-                  title: 'اللاعبون',
+                  title: appStrings[Localizations.localeOf(context).languageCode]!["players"]!,
                   items: players,
                   controller: _playerController,
                   itemBuilder: (item) {
@@ -183,7 +192,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     return InkWell(
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return PlayerScreen(playerId: item['id'].toString());
+                          final Locale currentLocale = Localizations.localeOf(context);
+                          return PlayerScreen(playerId: item['id'].toString(), lang: currentLocale.languageCode,);
                         }));
                       },
                       child: Column(
@@ -206,7 +216,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
                 _buildSection<Map<String, dynamic>>(
-                  title: 'الفرق',
+                  title: appStrings[Localizations.localeOf(context).languageCode]!["teams"]!,
                   items: teams,
                   controller: _teamController,
                   itemBuilder: (item) {
@@ -217,7 +227,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     return InkWell(
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return TeamScreen(teamID: item['id'].toString());
+                          final Locale currentLocale = Localizations.localeOf(context);
+                          return TeamScreen(teamID: item['id'].toString(), lang: currentLocale.languageCode,);
                         }));
                       },
                       child: Column(
