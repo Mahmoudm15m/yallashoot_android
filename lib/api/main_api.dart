@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:yallashoot/locator.dart';
 import 'package:yallashoot/settings_provider.dart';
 
+import '../functions/ostora_functions.dart';
+
 class ApiData {
   late Map<String, String> headers;
 
@@ -50,7 +52,23 @@ class ApiData {
       throw Exception('Error fetching data: $error');
     }
   }
+  Future<Map<String, dynamic>> fetchOData(String endpoint) async {
+    try {
+      final response = await http.get(Uri.parse('https://${generateRandomString()}.s-25.shop/api/v6.2/$endpoint'));
+      if (response.statusCode == 200) {
+        final dataDecoded = decodeResponse(response.body);
+        return json.decode(dataDecoded) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to load data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      throw Exception('Error fetching data: $error');
+    }
+  }
 
+  Future<Map<String, dynamic>> getCategory(String id) async {
+    return await fetchOData("category/$id");
+  }
 
   Future<Map<String, dynamic>> getHomeData() async {
     return await fetchData("matches");

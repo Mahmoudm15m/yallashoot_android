@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yallashoot/locator.dart';
@@ -13,11 +12,11 @@ import 'package:yallashoot/strings/languages.dart';
 import 'api/main_api.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
-
-  MobileAds.instance.initialize();
 
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
@@ -42,7 +41,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       locale: settingsProvider.locale,
       themeMode: settingsProvider.themeMode,
-
+      navigatorObservers: [routeObserver],
       supportedLocales: const [
         Locale('en'),
         Locale('ar'),
@@ -78,8 +77,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  BannerAd? _bannerAd;
-  bool _isBannerAdLoaded = false;
   Timer? _retryTimer;
   int width = 500;
 
@@ -92,41 +89,17 @@ class _MainScreenState extends State<MainScreen> {
     fetchUpdates();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       width = MediaQuery.of(context).size.width.toInt();
-      _loadBannerAd();
     });
   }
 
   @override
   void dispose() {
     _retryTimer?.cancel();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
-  void _loadBannerAd() {
-    _bannerAd?.dispose();
-    _isBannerAdLoaded = false;
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-9181001319721306/2051538525',
-      size: AdSize(width: width, height: 80),
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          setState(() {
-            _isBannerAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          ad.dispose();
-          _retryTimer = Timer(const Duration(seconds: 30), _loadBannerAd);
-        },
-      ),
-    );
-    _bannerAd!.load();
-  }
-
   Future<void> fetchUpdates() async {
-    const int currentVersion = 9;
+    const int currentVersion = 12;
     try {
       final data = await locator<ApiData>().checkUpdate(currentVersion);
       if (data['ok'] == true && data['version'] > currentVersion) {
@@ -150,27 +123,38 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
                 actions: [
-                  Container(
-                    decoration: BoxDecoration(
-                        color: Colors.blueGrey,
-                        borderRadius: BorderRadius.circular(20)),
-                    alignment: Alignment.center,
-                    child: TextButton(
-                      onPressed: () async {
-                        final url = data['link'] as String?;
-                        if (url != null) {
-                          await launchUrl(
-                            Uri.parse(url),
-                            mode: LaunchMode.externalApplication,
-                          );
-                        }
-                      },
-                      child: const Text(
-                        'تحديث الآن',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
+                  IconButton(
+                  onPressed: () async {
+                      final url = data['link'] as String?;
+                      if (url != null) {
+                        await launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    icon: Container(
+                      decoration: BoxDecoration(
+                          color: Colors.blueGrey,
+                          borderRadius: BorderRadius.circular(20)),
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () async {
+                          final url = data['link'] as String?;
+                          if (url != null) {
+                            await launchUrl(
+                              Uri.parse(url),
+                              mode: LaunchMode.externalApplication,
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'تحديث الآن',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
@@ -190,8 +174,6 @@ class _MainScreenState extends State<MainScreen> {
 
     final currentLocale = Localizations.localeOf(context);
 
-
-
     final screens = <Widget>[
       HomeScreen(),
       RanksScreen(lang: currentLocale.languageCode),
@@ -201,28 +183,17 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       body: screens[_selectedIndex],
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isBannerAdLoaded && _bannerAd != null)
-            SizedBox(
-              width: _bannerAd!.size.width.toDouble(),
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            ),
-          BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: Theme.of(context).colorScheme.primary,
-            unselectedItemColor: Colors.grey,
-            items: [
-              BottomNavigationBarItem(icon: const Icon(Icons.home), label: appStrings[currentLocale.languageCode]?["today_matches"]),
-              BottomNavigationBarItem(icon: const Icon(Icons.leaderboard), label: appStrings[currentLocale.languageCode]?["ranks"]),
-              BottomNavigationBarItem(icon: const Icon(Icons.newspaper), label: appStrings[currentLocale.languageCode]?["news"]),
-              BottomNavigationBarItem(icon: const Icon(Icons.settings), label: appStrings[currentLocale.languageCode]?["settings"]),
-            ],
-          ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
+        items: [
+          BottomNavigationBarItem(icon: const Icon(Icons.home), label: appStrings[currentLocale.languageCode]?["today_matches"]),
+          BottomNavigationBarItem(icon: const Icon(Icons.leaderboard), label: appStrings[currentLocale.languageCode]?["ranks"]),
+          BottomNavigationBarItem(icon: const Icon(Icons.newspaper), label: appStrings[currentLocale.languageCode]?["news"]),
+          BottomNavigationBarItem(icon: const Icon(Icons.settings), label: appStrings[currentLocale.languageCode]?["settings"]),
         ],
       ),
     );

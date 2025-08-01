@@ -103,7 +103,11 @@ const Map<String, Map<String, String>> appStrings = {
     'penalty': 'Penalty',
     'penalty_missed': 'Penalty Missed',
     'event': 'Event',
-
+    "second_yellow_card": "Second yellow card",
+    "own_goal": "Own goal",
+    "penalty_scored": "Penalty scored",
+    "goal_cancelled": "Goal cancelled",
+    "hit_woodwork": "Hit the woodwork",
 
     'no_data': 'No Data',
     'error_occurred': 'An error occurred',
@@ -132,7 +136,7 @@ const Map<String, Map<String, String>> appStrings = {
     'no_available_streams': 'No available streams at the moment!',
     'tap_to_watch': 'Tap to watch stream',
     'loading_ad': 'Loading ad...',
-
+    'channels_stream': 'Channels',
 
     'teams': 'Teams',
     'team': 'Team',
@@ -176,7 +180,7 @@ const Map<String, Map<String, String>> appStrings = {
     'next_match': 'المباراة القادمة',
     'last_match': 'المباراة الأخيرة',
     'history': 'التاريخ',
-
+    'channels_stream': 'قنوات',
 
     'show_all': 'عرض الكل',
     'only_live': 'البث المباشر فقط',
@@ -236,7 +240,11 @@ const Map<String, Map<String, String>> appStrings = {
     'd': 'ت',
     'l': 'خ',
     'pk': 'ضج',
-
+    "second_yellow_card": "بطاقة صفراء ثانية",
+    "own_goal": "هدف في مرماه",
+    "penalty_scored": "ضربة جزاء ناجحة",
+    "goal_cancelled": "هدف ملغي",
+    "hit_woodwork": "في العارضة",
 
     'coach': 'المدرب',
     'players': 'اللاعبين',
@@ -293,6 +301,7 @@ const Map<String, Map<String, String>> appStrings = {
     'transfers': 'الانتقالات',
     'season_statistics': 'إحصائيات الموسم',
     'formations': 'خطة اللعب',
+
 
 
     'left': 'يسار',

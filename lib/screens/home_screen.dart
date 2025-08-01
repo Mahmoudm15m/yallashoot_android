@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/locator.dart';
+import 'package:yallashoot/screens/category_screen.dart';
 import 'package:yallashoot/screens/league_screen.dart';
 import 'package:yallashoot/screens/search_screen.dart';
 import 'package:yallashoot/settings_provider.dart';
@@ -11,6 +12,62 @@ import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart' hide ClockTicker;
 import '../strings/languages.dart';
 import 'lives_screen.dart';
+
+class AppBarBottomRow extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback onLivePressed;
+  final VoidCallback onChannelsPressed;
+  final Map<String, Map<String, String>> appStrings;
+  final Locale currentLocale;
+
+  const AppBarBottomRow({
+    Key? key,
+    required this.onLivePressed,
+    required this.onChannelsPressed,
+    required this.appStrings,
+    required this.currentLocale,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          TextButton.icon(
+            onPressed: onLivePressed,
+            icon: const Icon(Icons.online_prediction_outlined, color: Colors.blueAccent),
+            label: Text(
+              appStrings[currentLocale.languageCode]!["live_button"]!,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
+          ),
+          Spacer(),
+          FilledButton.icon(
+            onPressed: onChannelsPressed,
+            icon: const Icon(Icons.subscriptions_outlined, size: 20),
+            label: Text(
+              appStrings[currentLocale.languageCode]!["channels_stream"]!,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight - 10); // يمكن تقليل ارتفاعه قليلاً
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -147,20 +204,11 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         centerTitle: true,
         title: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-                icon: const Icon(Icons.chevron_left, size: 28),
-                onPressed: _prevDay),
-            IconButton(
-                icon: const Icon(Icons.calendar_today, size: 24),
-                onPressed: _openBottomSheetDate),
-            IconButton(
-                icon: const Icon(Icons.chevron_right, size: 28),
-                onPressed: _nextDay),
-            IconButton(
-              padding: EdgeInsets.zero,
-              icon: Icon(Icons.search_outlined, size: 24),
+              icon: const Icon(Icons.search_outlined, size: 26),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return SearchScreen(
@@ -169,32 +217,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 }));
               },
             ),
-            SizedBox(
-              width: 10,
+            Spacer(),
+            Card(
+              elevation: 1.5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.chevron_left, size: 28),
+                    onPressed: _prevDay,
+                  ),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.calendar_today, size: 22),
+                    onPressed: _openBottomSheetDate,
+                  ),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.chevron_right, size: 28),
+                    onPressed: _nextDay,
+                  ),
+                ],
+              ),
             ),
+            Spacer(),
             IconButton(
-              icon: Icon(Icons.live_tv,
-                  color: _showLiveOnly ? liveRed : null, size: 24),
+              icon: Icon(
+                Icons.live_tv,
+                color: _showLiveOnly ? Colors.red.shade600 : null,
+                size: 26,
+              ),
               onPressed: () {
                 setState(() {
                   _showLiveOnly = !_showLiveOnly;
                 });
               },
             ),
-            Spacer(),
-            IconButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return LivesScreen(
-                      lang: currentLocale.languageCode,
-                    );
-                  }));
-                },
-                icon: Text(
-                  appStrings[currentLocale.languageCode]!["live_button"]!,
-                  style: TextStyle(fontSize: 16, color: Colors.blueAccent),
-                )),
           ],
+        ),
+
+        bottom: AppBarBottomRow(
+          appStrings: appStrings,
+          currentLocale: currentLocale,
+          onLivePressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) {
+              return LivesScreen(
+                lang: currentLocale.languageCode,
+              );
+            }));
+          },
+          onChannelsPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) {
+              return CategoryScreen();
+            }));
+          },
         ),
       ),
       body: LayoutBuilder(
@@ -203,20 +282,23 @@ class _HomeScreenState extends State<HomeScreen> {
           Widget content = FutureBuilder<dynamic>(
             future: _future,
             builder: (_, snap) {
-              if (snap.connectionState == ConnectionState.waiting)
+              if (snap.connectionState == ConnectionState.waiting) {
                 return const _LoadingList();
-              if (snap.hasError || !snap.hasData)
+              }
+              if (snap.hasError || !snap.hasData) {
                 return Center(
                     child: Text(
                         appStrings[currentLocale.languageCode]!["error"]!,
                         style: TextStyle(color: txtGrey)));
+              }
 
               final data = snap.data?['matches']?['data'] as List?;
-              if (data == null || data.isEmpty)
+              if (data == null || data.isEmpty) {
                 return Center(
                     child: Text(
                         appStrings[currentLocale.languageCode]!["no_matches"]!,
                         style: TextStyle(color: txtGrey)));
+              }
 
               final filtered = !_showLiveOnly
                   ? data

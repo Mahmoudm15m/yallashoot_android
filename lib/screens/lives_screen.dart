@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // --- ADDED: For SystemChrome ---
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/services.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import '../unity_ads_helper.dart';
 
 class LivesScreen extends StatefulWidget {
   late final String lang;
@@ -22,8 +22,6 @@ class _LivesScreenState extends State<LivesScreen> {
   late ApiData apiData;
   Map<String, dynamic>? adsData;
 
-  RewardedInterstitialAd? _rewardedInterstitialAd;
-  bool _isRewardedInterstitialAdReady = false;
 
   bool _userEarnedReward = false;
 
@@ -34,14 +32,13 @@ class _LivesScreenState extends State<LivesScreen> {
   void initState() {
     super.initState();
     apiData = ApiData();
+    AdManager.initializeAds(context);
     futureResults = fetchLives();
-    fetchAds();
   }
 
   @override
   void dispose() {
     _loadingCheckTimer?.cancel();
-    _rewardedInterstitialAd?.dispose();
     super.dispose();
   }
 
@@ -54,20 +51,6 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-  Future<void> fetchAds() async {
-    try {
-      late final api;
-      api = ApiData();
-      final data = await api.getAds();
-      if (mounted) {
-        setState(() {
-          adsData = data;
-        });
-      }
-    } catch (e) {
-      adsData = {};
-    }
-  }
 
   String? decodeBase64Ad(String? encoded) {
     if (encoded == null) return null;
@@ -78,58 +61,10 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-  void _loadRewardedInterstitialAd() {
-    RewardedInterstitialAd.load(
-      adUnitId: 'ca-app-pub-9181001319721306/6406366872', // Your Ad Unit ID
-      request: const AdRequest(),
-      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
-        onAdLoaded: (RewardedInterstitialAd ad) {
-          _rewardedInterstitialAd = ad;
-          _isRewardedInterstitialAdReady = true;
-          _rewardedInterstitialAd!.setImmersiveMode(true);
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          print('RewardedInterstitialAd failed to load: $error');
-          _rewardedInterstitialAd = null;
-          _isRewardedInterstitialAdReady = false;
-          Future.delayed(const Duration(seconds: 30), () {
-            if (mounted) _loadRewardedInterstitialAd();
-          });
-        },
-      ),
-    );
-  }
 
-  void _onMatchTap(Map<String, dynamic> match) {
-    final now = DateTime.now();
-    final timeSinceLastAd = _lastAdShownTime != null ? now.difference(_lastAdShownTime!) : null;
-
-    if (timeSinceLastAd == null || timeSinceLastAd >= const Duration(seconds: 50)) {
-      _loadRewardedInterstitialAd();
-
-      if (_isRewardedInterstitialAdReady && _rewardedInterstitialAd != null) {
-        _showRewardedInterstitialThenNavigate(match);
-      } else {
-        _showLoadingDialog();
-        _loadingCheckTimer?.cancel();
-        _loadingCheckTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-          if (_isRewardedInterstitialAdReady && _rewardedInterstitialAd != null) {
-            timer.cancel();
-            if (mounted) Navigator.of(context, rootNavigator: true).pop();
-            _showRewardedInterstitialThenNavigate(match);
-          }
-        });
-        Future.delayed(const Duration(seconds: 5), (){
-          if (mounted && _loadingCheckTimer != null && _loadingCheckTimer!.isActive) {
-            _loadingCheckTimer!.cancel();
-            Navigator.of(context, rootNavigator: true).pop();
-            _navigateToStream(match);
-          }
-        });
-      }
-    } else {
-      _navigateToStream(match);
-    }
+  Future<void> _onMatchTap(Map<String, dynamic> match) async {
+    await AdManager.continueApp(context);
+    _navigateToStream(match);
   }
 
   void _navigateToStream(Map<String, dynamic> match){
@@ -142,83 +77,6 @@ class _LivesScreenState extends State<LivesScreen> {
     );
   }
 
-  void _showRewardedInterstitialThenNavigate(Map<String, dynamic> match) {
-    if (_rewardedInterstitialAd == null) {
-      _navigateToStream(match);
-      return;
-    }
-
-    setState(() {
-      _userEarnedReward = false;
-    });
-
-    _rewardedInterstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (RewardedInterstitialAd ad) {
-        // --- MODIFIED: Restore system UI after ad is dismissed ---
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-        ad.dispose();
-        _rewardedInterstitialAd = null;
-        _isRewardedInterstitialAdReady = false;
-
-        if (_userEarnedReward) {
-          _navigateToStream(match);
-        } else {
-          print("Ad dismissed without earning reward. Not navigating.");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(appStrings[Localizations.localeOf(context).languageCode]!["watch_ad_to_continue"]!)),
-          );
-        }
-      },
-      onAdFailedToShowFullScreenContent: (RewardedInterstitialAd ad, AdError error) {
-        // --- MODIFIED: Restore system UI if ad fails to show ---
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-        print('RewardedInterstitialAd failed to show: $error');
-        ad.dispose();
-        _rewardedInterstitialAd = null;
-        _isRewardedInterstitialAdReady = false;
-        _navigateToStream(match);
-      },
-    );
-
-    // --- MODIFIED: Set immersive mode before showing the ad ---
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _rewardedInterstitialAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-      print('User earned reward: ${reward.amount} ${reward.type}');
-      setState(() {
-        _userEarnedReward = true;
-        _lastAdShownTime = DateTime.now();
-      });
-    });
-  }
-
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(
-                  appStrings[Localizations.localeOf(context).languageCode]!["loading_ad"]!,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

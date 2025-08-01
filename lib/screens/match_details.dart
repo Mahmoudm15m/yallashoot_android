@@ -80,20 +80,7 @@ class _MatchDetailsState extends State<MatchDetails> {
   }
 
   Future<void> _launchVideoUrl(String? url, BuildContext context) async {
-    if (url != null && url.isNotEmpty) {
-      final uri = Uri.tryParse(url);
-      if (uri != null && await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(appStrings[
-                Localizations.localeOf(context).languageCode]!["error"]!)),
-          );
-        }
-      }
-    }
+    await launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -763,7 +750,7 @@ class _MatchDetailsState extends State<MatchDetails> {
 
     final eventsList = isKeyEventsOnly
         ? eventsListFull
-        .where((e) => e['type'] == 1 || e['type'] == 3 || e['type'] == 22)
+        .where((e) => e['type'] == 1 || e['type'] == 3 || e['type'] == 5 || e['type'] == 22)
         .toList()
         : eventsListFull;
 
@@ -1196,8 +1183,7 @@ class _EventTimelineCard extends StatelessWidget {
     final assist = event["assist_player_name"]?["title"] as String?;
     final videoUrl = event["event_video"] as String?;
     final hasVideo = videoUrl != null && videoUrl.isNotEmpty;
-    final eventInfo =
-    _getEventInfo(context, type, player, assist, isHomeEvent);
+    final eventInfo = _getEventInfo(context, event, isHomeEvent);
 
     final bool isGoal = type == 1;
 
@@ -1272,85 +1258,108 @@ class _EventTimelineCard extends StatelessWidget {
   }
 }
 
-_EventDisplayInfo _getEventInfo(BuildContext context, int type, String? player,
-    String? assist, bool isHomeEvent) {
+
+_EventDisplayInfo _getEventInfo(
+    BuildContext context, Map<String, dynamic> event, bool isHomeEvent) {
   final colorScheme = Theme.of(context).colorScheme;
+  final locale = Localizations.localeOf(context).languageCode;
+
+  // Extract data from the event map
+  final type = event["type"] ?? 0;
+  final status = event["status"] ?? 0;
+  final player = event["player_name"]?["title"] as String?;
+  final assist = event["assist_player_name"]?["title"] as String?;
+
 
   switch (type) {
-    case 1:
+    case 1: // Goal
       return _EventDisplayInfo(
           icon: const Icon(Icons.sports_soccer, color: Colors.green, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "goal"]!,
+          title: appStrings[locale]!["goal"]!,
           details: assist != null
-              ? Text(
-              "${appStrings[Localizations.localeOf(context).languageCode]!["assists"]!} : $assist",
+              ? Text("${appStrings[locale]!["assists"]!}: $assist",
               style: TextStyle(
                   color: colorScheme.onSurfaceVariant, fontSize: 11))
               : null);
-    case 3:
-      return _EventDisplayInfo(
-          icon: const Icon(Icons.style, color: Colors.red, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "red_card"]!,
-          details: null);
-    case 2:
+
+    case 2: // Yellow Card
       return _EventDisplayInfo(
           icon: const Icon(Icons.style, color: Colors.amber, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "yellow_card"]!,
+          title: appStrings[locale]!["yellow_card"]!,
           details: null);
-    case 8:
+
+    case 3: // Red Card or Second Yellow
+      final isDirectRed = status == 6;
       return _EventDisplayInfo(
-          icon: const Icon(Icons.swap_horiz_rounded,
-              color: Colors.blue, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "substitution"]!,
+          icon: Icon(Icons.style, color: Colors.red.shade700, size: 18),
+          title: isDirectRed
+              ? appStrings[locale]!["red_card"]!
+              : appStrings[locale]!["second_yellow_card"]!, // Add this string
+          details: null);
+
+    case 4: // Own Goal
+      return _EventDisplayInfo(
+          icon: Icon(Icons.block, color: Colors.red.shade400, size: 18),
+          title: appStrings[locale]!["own_goal"]!, // Add this string
+          details: null);
+
+    case 5: // Penalty Scored
+      return _EventDisplayInfo(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+          title: appStrings[locale]!["penalty_scored"]!, // Add this string
+          details: null);
+
+    case 6: // Penalty Missed
+    case 23: // Penalty Missed (Alternative type)
+      return _EventDisplayInfo(
+          icon: Icon(Icons.cancel_outlined, color: colorScheme.error, size: 18),
+          title: appStrings[locale]!["penalty_missed"]!,
+          details: null);
+
+    case 7: // Goal Cancelled (VAR)
+      return _EventDisplayInfo(
+          icon: Icon(Icons.remove_circle, color: Colors.grey.shade600, size: 18),
+          title: appStrings[locale]!["goal_cancelled"]!, // Add this string
+          details: null);
+
+    case 8: // Substitution
+      return _EventDisplayInfo(
+          icon: const Icon(Icons.swap_horiz_rounded, color: Colors.blue, size: 18),
+          title: appStrings[locale]!["substitution"]!,
           details: RichText(
               textAlign: isHomeEvent ? TextAlign.start : TextAlign.end,
               text: TextSpan(
-                style: DefaultTextStyle.of(context)
-                    .style
-                    .copyWith(fontSize: 11),
+                style: DefaultTextStyle.of(context).style.copyWith(fontSize: 11),
                 children: [
                   TextSpan(
-                      text:
-                      '${appStrings[Localizations.localeOf(context).languageCode]!["in"]!}: ',
+                      text: '${appStrings[locale]!["in"]!}: ',
                       style: TextStyle(color: Colors.green.shade700)),
+                  // CORRECT: 'assist' is the player coming IN
                   TextSpan(
-                      text: '$player ',
+                      text: '$assist ',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   TextSpan(
-                      text:
-                      '${appStrings[Localizations.localeOf(context).languageCode]!["out"]!}: ',
+                      text: '${appStrings[locale]!["out"]!}: ',
                       style: TextStyle(color: Colors.red.shade700)),
+                  // CORRECT: 'player' is the player going OUT
                   TextSpan(
-                      text: '$assist',
+                      text: '$player',
                       style: TextStyle(
                           color: colorScheme.onSurfaceVariant,
                           decoration: TextDecoration.lineThrough)),
                 ],
               )));
-    case 22:
+
+    case 22: // Hit Woodwork
       return _EventDisplayInfo(
-          icon: Icon(Icons.radio_button_checked,
-              color: colorScheme.secondary, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "penalty"]!,
+          icon: Icon(Icons.track_changes_outlined, color: Colors.orange.shade700, size: 18),
+          title: appStrings[locale]!["hit_woodwork"]!, // Add this string
           details: null);
-    case 23:
+
+    default: // Default/Unknown Event
       return _EventDisplayInfo(
-          icon:
-          Icon(Icons.cancel_outlined, color: colorScheme.error, size: 18),
-          title: appStrings[Localizations.localeOf(context).languageCode]![
-          "penalty_missed"]!,
-          details: null);
-    default:
-      return _EventDisplayInfo(
-          icon: Icon(Icons.info_outline,
-              color: colorScheme.onSurfaceVariant, size: 18),
-          title:
-          appStrings[Localizations.localeOf(context).languageCode]!["event"]!,
+          icon: Icon(Icons.info_outline, color: colorScheme.onSurfaceVariant, size: 18),
+          title: appStrings[locale]!["event"]!,
           details: null);
   }
 }
