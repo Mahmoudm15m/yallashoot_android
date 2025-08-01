@@ -99,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> fetchUpdates() async {
-    const int currentVersion = 12;
+    const int currentVersion = 13;
     try {
       final data = await locator<ApiData>().checkUpdate(currentVersion);
       if (data['ok'] == true && data['version'] > currentVersion) {
