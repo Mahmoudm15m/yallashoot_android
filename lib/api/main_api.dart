@@ -1,17 +1,25 @@
 import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:yallashoot/locator.dart';
 import 'package:yallashoot/settings_provider.dart';
 
-import '../functions/ostora_functions.dart';
-
 class ApiData {
   late Map<String, String> headers;
 
+  // Constructor
   ApiData() {
     _updateHeaders();
     locator<SettingsProvider>().addListener(_updateHeaders);
   }
+
+  // ============== Constants for Ostora API ==============
+  static const _aesKeyHex = "4e5c6d1a8b3fe8137a3b9df26a9c4de195267b8e6f6c0b4e1c3ae1d27f2b4e6f";
+  static const _ivHex = "a9c21f8d7e6b4a9db12e4f9d5c1a7b8e";
+  // ======================================================
 
   void _updateHeaders() {
     final settings = locator<SettingsProvider>();
@@ -21,7 +29,6 @@ class ApiData {
       'timezone': settings.timeZoneOffset.toString(),
     };
   }
-
 
   final String baseUrl = "https://api.syria-live.fun/api/v2";
 
@@ -52,19 +59,89 @@ class ApiData {
       throw Exception('Error fetching data: $error');
     }
   }
+
   Future<Map<String, dynamic>> fetchOData(String endpoint) async {
     try {
-      final response = await http.get(Uri.parse('https://${generateRandomString()}.s-25.shop/api/v6.2/$endpoint'));
+      // 1. توليد Subdomain عشوائي
+      final randomSubdomain = _generateRandomString();
+      final url = "https://${randomSubdomain}.s-25.shop/api/v6.2/$endpoint";
+
+      // 2. إرسال الطلب
+      final response = await http.get(Uri.parse(url));
+
       if (response.statusCode == 200) {
-        final dataDecoded = decodeResponse(response.body);
-        return json.decode(dataDecoded) as Map<String, dynamic>;
+        // 3. فك تشفير الاستجابة
+        final decryptedJson = _decodeResponse(response.body);
+        return json.decode(decryptedJson) as Map<String, dynamic>;
       } else {
-        throw Exception('Failed to load data. Status code: ${response.statusCode}');
+        throw Exception('Failed to load Ostora data. Status code: ${response.statusCode}');
       }
     } catch (error) {
-      throw Exception('Error fetching data: $error');
+      throw Exception('Error fetching Ostora data: $error');
     }
   }
+
+  // =================================================================
+  // ==== الدوال المساعدة التي تم نقلها من كود Kotlin إلى Dart ====
+  // =================================================================
+
+  /// دالة لتوليد نص عشوائي بنفس طريقة كود Kotlin
+  String _generateRandomString({int length = 10}) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
+  /// دالة لفك تشفير الاستجابة المشفرة
+  String _decodeResponse(String ciphertext) {
+    // تحويل المفتاح والـ IV من صيغة Hex إلى Bytes
+    final keyBytes = _hexToBytes(_aesKeyHex);
+    final ivBytes = _hexToBytes(_ivHex);
+
+    // إعداد أداة فك التشفير
+    final key = encrypt.Key(keyBytes);
+    final iv = encrypt.IV(ivBytes);
+    // نستخدم AES/CBC مع NoPadding، وسنقوم بإزالة الـ Padding يدويًا
+    final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc, padding: null));
+
+    // فك تشفير النص من Base64 ثم فك تشفير AES
+    // نستخدم Encrypted.from64 بدلاً من fromBase64 لأنها تتعامل مع الـ bytes مباشرة
+    final encryptedData = encrypt.Encrypted(base64.decode(ciphertext));
+    final decryptedBytes = encrypter.decryptBytes(encryptedData, iv: iv);
+
+    // --- تطبيق نفس منطق إزالة الحشو (Padding) المستخدم في Kotlin ---
+    if (decryptedBytes.isEmpty) {
+      return "";
+    }
+
+    final padLen = decryptedBytes.last;
+
+    if (padLen > 16 || padLen <= 0 || decryptedBytes.length < padLen) {
+      // إذا كانت قيمة الحشو غير منطقية، نُرجع النص كما هو
+      return utf8.decode(decryptedBytes, allowMalformed: true);
+    }
+
+    // إزالة الحشو
+    final unpaddedBytes = Uint8List.fromList(decryptedBytes.sublist(0, decryptedBytes.length - padLen));
+
+    return utf8.decode(unpaddedBytes);
+  }
+
+  /// دالة مساعدة لتحويل نص Hex إلى قائمة من الـ Bytes
+  Uint8List _hexToBytes(String hex) {
+    hex = hex.replaceAll(" ", ""); // إزالة أي مسافات
+    final result = Uint8List(hex.length ~/ 2);
+    for (int i = 0; i < hex.length; i += 2) {
+      final num = hex.substring(i, i + 2);
+      result[i ~/ 2] = int.parse(num, radix: 16);
+    }
+    return result;
+  }
+
+  // =================================================================
+  // ==== باقي الدوال تبقى كما هي بدون أي تغيير ====
+  // =================================================================
 
   Future<Map<String, dynamic>> getCategory(String id) async {
     return await fetchOData("category/$id");
@@ -73,6 +150,10 @@ class ApiData {
   Future<Map<String, dynamic>> getHomeData() async {
     return await fetchData("matches");
   }
+
+  // ... (باقي الدوال من الكود الأصلي) ...
+  // ... (All other functions from your original code) ...
+  // --- Just copy and paste the rest of your functions from here down ---
   Future<Map<String, dynamic>> checkUpdate(int v) async {
     return await fetchUpdateData("app/check_update?v=$v");
   }
@@ -181,5 +262,4 @@ class ApiData {
   Future<Map<String, dynamic>> getLeagueRanks(String id) async {
     return await fetchData("get_league_ranks?rank_id=$id");
   }
-
 }

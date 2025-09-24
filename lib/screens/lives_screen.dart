@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-import '../unity_ads_helper.dart';
+// import '../unity_ads_helper.dart';
 
 class LivesScreen extends StatefulWidget {
   late final String lang;
@@ -32,7 +32,7 @@ class _LivesScreenState extends State<LivesScreen> {
   void initState() {
     super.initState();
     apiData = ApiData();
-    AdManager.initializeAds(context);
+    // AdManager.initializeAds(context);
     futureResults = fetchLives();
   }
 
@@ -63,7 +63,7 @@ class _LivesScreenState extends State<LivesScreen> {
 
 
   Future<void> _onMatchTap(Map<String, dynamic> match) async {
-    await AdManager.continueApp(context);
+    // await AdManager.continueApp(context);
     _navigateToStream(match);
   }
 

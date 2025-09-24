@@ -3,7 +3,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/screens/watch_screen.dart';
 import '../api/main_api.dart';
 import '../main.dart';
-import '../unity_ads_helper.dart';
+// import '../unity_ads_helper.dart';
 
 // --- تحديث شاشة التحميل (Shimmer) لتناسب التصميم الجديد ---
 Widget buildLoadingScreen(BuildContext context) {
@@ -110,7 +110,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   void initState() {
     super.initState();
     _reloadData();
-    AdManager.initializeAds(context);
+    // AdManager.initializeAds(context);
   }
 
   @override
@@ -250,7 +250,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
                       size: 28,
                     ),
                     onTap: () async {
-                      await AdManager.showInterstitialAd(context);
+                      // await AdManager.showInterstitialAd(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) {
                         return WatchScreen(
                           url: channel["source"],

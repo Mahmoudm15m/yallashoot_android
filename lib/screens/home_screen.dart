@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/locator.dart';
-import 'package:yallashoot/screens/category_screen.dart';
 import 'package:yallashoot/screens/league_screen.dart';
 import 'package:yallashoot/screens/search_screen.dart';
 import 'package:yallashoot/settings_provider.dart';
@@ -11,63 +10,9 @@ import '../api/main_api.dart';
 import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart' hide ClockTicker;
 import '../strings/languages.dart';
+import 'category_screen.dart';
 import 'lives_screen.dart';
-
-class AppBarBottomRow extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback onLivePressed;
-  final VoidCallback onChannelsPressed;
-  final Map<String, Map<String, String>> appStrings;
-  final Locale currentLocale;
-
-  const AppBarBottomRow({
-    Key? key,
-    required this.onLivePressed,
-    required this.onChannelsPressed,
-    required this.appStrings,
-    required this.currentLocale,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          TextButton.icon(
-            onPressed: onLivePressed,
-            icon: const Icon(Icons.online_prediction_outlined, color: Colors.blueAccent),
-            label: Text(
-              appStrings[currentLocale.languageCode]!["live_button"]!,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
-              ),
-            ),
-          ),
-          Spacer(),
-          FilledButton.icon(
-            onPressed: onChannelsPressed,
-            icon: const Icon(Icons.subscriptions_outlined, size: 20),
-            label: Text(
-              appStrings[currentLocale.languageCode]!["channels_stream"]!,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight - 10); // يمكن تقليل ارتفاعه قليلاً
-}
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -183,6 +128,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _savePriorityChamps();
   }
 
+  int _getMatchSortPriority(String? status) {
+    // Live matches (including half-time) are highest priority
+    if (status == '1' || status == '3' || status == '2') return 0;
+    // Upcoming matches are next
+    if (status == '0') return 1;
+    // Finished matches are lowest priority
+    if (status == '4' || status == '11') return 2;
+    // Any other status (postponed, cancelled, etc.)
+    return 3;
+  }
+
   @override
   Widget build(BuildContext context) {
     final Locale currentLocale = Localizations.localeOf(context);
@@ -203,9 +159,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: bg,
         elevation: 0,
         centerTitle: true,
+
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             IconButton(
               icon: const Icon(Icons.search_outlined, size: 26),
@@ -217,13 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 }));
               },
             ),
-            Spacer(),
             Card(
               elevation: 1.5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     padding: EdgeInsets.zero,
@@ -243,7 +200,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            Spacer(),
             IconButton(
               icon: Icon(
                 Icons.live_tv,
@@ -259,21 +215,54 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
 
-        bottom: AppBarBottomRow(
-          appStrings: appStrings,
-          currentLocale: currentLocale,
-          onLivePressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return LivesScreen(
-                lang: currentLocale.languageCode,
-              );
-            }));
-          },
-          onChannelsPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return CategoryScreen();
-            }));
-          },
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      return CategoryScreen();
+                    }));
+                  },
+                  // الأيقونة المقترحة
+                  icon: Icon(
+                    Icons.satellite_alt_rounded,
+                    size: 20,
+                    color: Colors.redAccent,
+                  ),
+                  label: Text(
+                    appStrings[currentLocale.languageCode]!["channels"]!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                TextButton(
+                    onPressed: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return LivesScreen(lang: currentLocale.languageCode,);
+                      }));
+                    },
+                    child: Text(
+                      appStrings[currentLocale.languageCode]!["live_button"]!,
+                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent),
+                    )
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       body: LayoutBuilder(
@@ -323,11 +312,59 @@ class _HomeScreenState extends State<HomeScreen> {
                     .putIfAbsent(lid, () => [])
                     .add(m as Map<String, dynamic>);
               }
-              final keys = grouped.keys.toList();
+
+              // --- MODIFICATION 1: SORT MATCHES WITHIN EACH CHAMPIONSHIP ---
+              grouped.forEach((key, matchList) {
+                matchList.sort((a, b) {
+                  final statusA = a['status']?.toString();
+                  final statusB = b['status']?.toString();
+
+                  final priorityA = _getMatchSortPriority(statusA);
+                  final priorityB = _getMatchSortPriority(statusB);
+
+                  if (priorityA != priorityB) {
+                    return priorityA.compareTo(priorityB);
+                  }
+
+                  // If priorities are the same, sort by time (earliest first)
+                  final timestampA = a['match_timestamp'] as int? ?? 0;
+                  final timestampB = b['match_timestamp'] as int? ?? 0;
+                  return timestampA.compareTo(timestampB);
+                });
+              });
+
+
+              // --- MODIFICATION 2: SORT THE CHAMPIONSHIPS THEMSELVES ---
+              final pinnedKeys = _priorityChamps.where((id) => grouped.containsKey(id)).toList();
+              final unpinnedKeys = grouped.keys.where((id) => !_priorityChamps.contains(id)).toList();
+
+              // Sort the unpinned championships based on their first match
+              unpinnedKeys.sort((keyA, keyB) {
+                // Since match lists are now sorted, the first match determines the championship's order.
+                final firstMatchA = grouped[keyA]!.first;
+                final firstMatchB = grouped[keyB]!.first;
+
+                final statusA = firstMatchA['status']?.toString();
+                final statusB = firstMatchB['status']?.toString();
+
+                final priorityA = _getMatchSortPriority(statusA);
+                final priorityB = _getMatchSortPriority(statusB);
+
+                if (priorityA != priorityB) {
+                  return priorityA.compareTo(priorityB);
+                }
+
+                // If priorities are the same, sort by time
+                final timestampA = firstMatchA['match_timestamp'] as int? ?? 0;
+                final timestampB = firstMatchB['match_timestamp'] as int? ?? 0;
+                return timestampA.compareTo(timestampB);
+              });
+
               final orderedKeys = [
-                ..._priorityChamps.where(grouped.containsKey),
-                ...keys.where((id) => !_priorityChamps.contains(id)),
+                ...pinnedKeys,
+                ...unpinnedKeys,
               ];
+              // --- END OF MODIFICATIONS ---
 
               Widget listView = ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -354,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final section = grouped[lid]!;
                   return _ChampSection(
                     champ: section.first['championship'] as Map<String, dynamic>,
-                    matches: section,
+                    matches: section, // Pass the now-sorted list of matches
                     cardColor: card,
                     liveRed: liveRed,
                     showLiveOnly: _showLiveOnly,
@@ -443,7 +480,7 @@ class _ChampSectionState extends State<_ChampSection> {
                 child: Row(
                   children: [
                     Image.network(
-                      "https://imgs.ysscores.com/championship/64/${widget.champ['image']}",
+                      "https://api.alkhbeerapp.com/img_proxy?url=https://imgs.ysscores.com/championship/64/${widget.champ['image']}",
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                     const SizedBox(width: 8),
@@ -510,7 +547,6 @@ class _ChampSectionState extends State<_ChampSection> {
     );
   }
 }
-
 
 class _MatchCard extends StatefulWidget {
   const _MatchCard({
@@ -710,7 +746,7 @@ class _MatchCardState extends State<_MatchCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(color: widget.liveRed, borderRadius: BorderRadius.circular(4)),
-            child: const Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 10)),
+            child: Text(appStrings[Localizations.localeOf(context).languageCode]!["live"]!, style: TextStyle(color: Colors.white, fontSize: 10)), // Changed from 'LIVE' to use localization
           ),
           const SizedBox(height: 4),
           Text('${widget.match['home_scores']} - ${widget.match['away_scores']}', style: textBold),
@@ -791,7 +827,7 @@ class _TeamSide extends StatelessWidget {
     return Column(
       children: [
         Image.network(
-          "https://imgs.ysscores.com/teams/64/${team['image']}",
+          "https://api.alkhbeerapp.com/img_proxy?url=https://imgs.ysscores.com/teams/64/${team['image']}",
           width: 37,
           height: 37,
           errorBuilder: (_, __, ___) => const SizedBox(width: 37, height: 37),
