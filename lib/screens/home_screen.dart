@@ -215,55 +215,54 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
 
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return CategoryScreen();
-                    }));
-                  },
-                  // الأيقونة المقترحة
-                  icon: Icon(
-                    Icons.satellite_alt_rounded,
-                    size: 20,
-                    color: Colors.redAccent,
-                  ),
-                  label: Text(
-                    appStrings[currentLocale.languageCode]!["channels"]!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                ),
-                TextButton(
-                    onPressed: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context){
-                        return LivesScreen(lang: currentLocale.languageCode,);
-                      }));
-                    },
-                    child: Text(
-                      appStrings[currentLocale.languageCode]!["live_button"]!,
-                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent),
-                    )
-                ),
-              ],
-            ),
-          ),
-        ),
+        // bottom: PreferredSize(
+        //   preferredSize: const Size.fromHeight(50.0),
+        //   child: Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        //     child: Row(
+        //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //       children: [
+        //         TextButton.icon(
+        //           onPressed: () {
+        //             Navigator.push(context, MaterialPageRoute(builder: (context) {
+        //               return CategoryScreen();
+        //             }));
+        //           },
+        //           icon: Icon(
+        //             Icons.satellite_alt_rounded,
+        //             size: 20,
+        //             color: Colors.redAccent,
+        //           ),
+        //           label: Text(
+        //             appStrings[currentLocale.languageCode]!["channels"]!,
+        //             style: TextStyle(
+        //               fontSize: 16,
+        //               color: Colors.redAccent,
+        //               fontWeight: FontWeight.w600,
+        //             ),
+        //           ),
+        //           style: TextButton.styleFrom(
+        //             shape: RoundedRectangleBorder(
+        //               borderRadius: BorderRadius.circular(20.0),
+        //             ),
+        //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        //           ),
+        //         ),
+        //         TextButton(
+        //             onPressed: (){
+        //               Navigator.push(context, MaterialPageRoute(builder: (context){
+        //                 return LivesScreen(lang: currentLocale.languageCode,);
+        //               }));
+        //             },
+        //             child: Text(
+        //               appStrings[currentLocale.languageCode]!["live_button"]!,
+        //               style: const TextStyle(fontSize: 16, color: Colors.blueAccent),
+        //             )
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
