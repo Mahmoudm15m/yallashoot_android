@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:better_player/better_player.dart';
+import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
