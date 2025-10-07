@@ -1,11 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/screens/watch_screen.dart';
 import '../api/main_api.dart';
 import '../main.dart';
-// import '../unity_ads_helper.dart';
+import '../widgets/html_viewer_widget.dart';
 
-// --- تحديث شاشة التحميل (Shimmer) لتناسب التصميم الجديد ---
 Widget buildLoadingScreen(BuildContext context) {
   final theme = Theme.of(context);
   final isDarkMode = theme.brightness == Brightness.dark;
@@ -13,7 +13,7 @@ Widget buildLoadingScreen(BuildContext context) {
   final highlightColor = isDarkMode ? Colors.grey[700]! : Colors.grey[200]!;
 
   return ListView.builder(
-    itemCount: 8, // يمكنك زيادة العدد لملء الشاشة
+    itemCount: 8,
     itemBuilder: (context, index) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -26,7 +26,7 @@ Widget buildLoadingScreen(BuildContext context) {
                 width: 80,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.black, // اللون لا يهم هنا
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
@@ -67,14 +67,76 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   List<dynamic> filteredChannels = [];
   final String defaultChannelImage = 'https://via.placeholder.com/150/222B32/FFFFFF?Text=Channel';
 
+  Map<String, dynamic>? adsData;
 
+  @override
+  void initState() {
+    super.initState();
+    _reloadData();
+    _fetchAds();
+  }
+
+  Future<void> _fetchAds() async {
+    try {
+      final ads = await apiService.getAds();
+      if (mounted) {
+        setState(() {
+          adsData = ads;
+        });
+      }
+    } catch (e) {
+      print("Failed to fetch ads for channels: $e");
+    }
+  }
+
+  String? decodeBase64Ad(String? encoded) {
+    if (encoded == null || encoded.isEmpty) return null;
+    try {
+      return utf8.decode(base64.decode(encoded));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _onChannelTap(Map<String, dynamic> channel) async {
+    final encodedAd = adsData?['app_ads']?['video_on_channel_open'] as String?;
+    final adHtmlContent = decodeBase64Ad(encodedAd);
+
+    if (adHtmlContent != null) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FullScreenHtmlAdWidget(
+            htmlContent: adHtmlContent,
+            onAdClosed: () {
+              Navigator.pop(context);
+              _navigateToWatchScreen(channel);
+            },
+          ),
+        ),
+      );
+    } else {
+      _navigateToWatchScreen(channel);
+    }
+  }
+
+  void _navigateToWatchScreen(Map<String, dynamic> channel) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return WatchScreen(
+        url: channel["source"],
+        userAgent: channel["agent"],
+      );
+    }));
+  }
+
+  // --- باقي الدوال تبقى كما هي ---
   Future<Map<String, dynamic>> fetchHomeData() async {
     try {
       final data = await apiService.getCategory(widget.id);
       if (mounted) {
         setState(() {
           allChannels = data["data"]?["items"] ?? [];
-          // استدعاء filterSearchResults بدلاً من إسناد القائمة مباشرة
           filterSearchResults(searchController.text);
         });
       }
@@ -107,13 +169,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _reloadData();
-    // AdManager.initializeAds(context);
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
@@ -137,7 +192,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -180,7 +234,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
         future: futureResults,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return buildLoadingScreen(context); // تمرير الـ context
+            return buildLoadingScreen(context);
           }
           if (snapshot.hasError || allChannels.isEmpty) {
             return Center(
@@ -198,8 +252,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
               ),
             );
           }
-
-          // --- استخدام تصميم جديد لعناصر القائمة ---
           return ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             itemCount: filteredChannels.length,
@@ -207,7 +259,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
               final channel = filteredChannels[index];
               final channelName = channel["name"] ?? 'اسم القناة';
               final channelImage = channel["image"] ?? defaultChannelImage;
-
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
                 child: Card(
@@ -223,7 +274,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
                       child: Image.network(
                         channelImage,
                         width: 80,
-                        height: 60, // ارتفاع مناسب لشكل التلفاز
+                        height: 60,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
@@ -249,15 +300,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
                       color: theme.colorScheme.primary,
                       size: 28,
                     ),
-                    onTap: () async {
-                      // await AdManager.showInterstitialAd(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
-                        return WatchScreen(
-                          url: channel["source"],
-                          userAgent: channel["agent"],
-                        );
-                      }));
-                    },
+
+                    onTap: () => _onChannelTap(channel),
                   ),
                 ),
               );

@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-// import '../unity_ads_helper.dart';
+import '../widgets/html_viewer_widget.dart'; // تم إضافة المسار الخاص بويدجت الإعلان
+
 
 class LivesScreen extends StatefulWidget {
-  late final String lang;
+  final String lang;
   LivesScreen({
     required this.lang
   });
@@ -20,26 +20,28 @@ class LivesScreen extends StatefulWidget {
 class _LivesScreenState extends State<LivesScreen> {
   late Future<Map<String, dynamic>> futureResults;
   late ApiData apiData;
-  Map<String, dynamic>? adsData;
-
-
-  bool _userEarnedReward = false;
-
-  Timer? _loadingCheckTimer;
-  DateTime? _lastAdShownTime;
+  Map<String, dynamic>? adsData; // متغير جديد لتخزين بيانات الإعلانات
 
   @override
   void initState() {
     super.initState();
     apiData = ApiData();
-    // AdManager.initializeAds(context);
     futureResults = fetchLives();
+    _fetchAds(); // استدعاء دالة جلب الإعلانات
   }
 
-  @override
-  void dispose() {
-    _loadingCheckTimer?.cancel();
-    super.dispose();
+  // دالة جديدة لجلب الإعلانات مرة واحدة عند فتح الشاشة
+  Future<void> _fetchAds() async {
+    try {
+      final ads = await apiData.getAds();
+      if (mounted) {
+        setState(() {
+          adsData = ads;
+        });
+      }
+    } catch (e) {
+      print("Failed to fetch ads: $e");
+    }
   }
 
   Future<Map<String, dynamic>> fetchLives() async {
@@ -51,9 +53,8 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-
   String? decodeBase64Ad(String? encoded) {
-    if (encoded == null) return null;
+    if (encoded == null || encoded.isEmpty) return null;
     try {
       return utf8.decode(base64.decode(encoded));
     } catch (_) {
@@ -61,10 +62,36 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-
+  // تم تعديل هذه الدالة بالكامل لتشمل منطق عرض الإعلان
   Future<void> _onMatchTap(Map<String, dynamic> match) async {
-    // await AdManager.continueApp(context);
-    _navigateToStream(match);
+    // 1. احصل على كود الإعلان المشفر من البيانات التي تم جلبها
+    final encodedAd = adsData?['app_ads']?['video_on_stream_enter'] as String?;
+
+    // 2. قم بفك تشفيره
+    final adHtmlContent = decodeBase64Ad(encodedAd);
+
+    // 3. تحقق إذا كان هناك محتوى إعلاني صالح
+    if (adHtmlContent != null) {
+      // إذا كان هناك إعلان، قم بعرضه في شاشة كاملة
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FullScreenHtmlAdWidget(
+            htmlContent: adHtmlContent,
+            onAdClosed: () {
+              // عند إغلاق الإعلان، أغلق شاشة الإعلان
+              Navigator.pop(context);
+              // ثم انتقل إلى شاشة البث
+              _navigateToStream(match);
+            },
+          ),
+        ),
+      );
+    } else {
+      // إذا لم يكن هناك إعلان، انتقل مباشرة إلى شاشة البث
+      _navigateToStream(match);
+    }
   }
 
   void _navigateToStream(Map<String, dynamic> match){
@@ -133,7 +160,7 @@ class _LivesScreenState extends State<LivesScreen> {
                                 child: Column(
                                   children: [
                                     Image.network(
-                                      "https://api.syria-live.fun/img_proxy?url=" + match["home_logo"],
+                                      "https://api.alkhbeerapp.com/img_proxy?url=" + match["home_logo"],
                                       width: 50,
                                       height: 50,
                                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),
@@ -161,7 +188,7 @@ class _LivesScreenState extends State<LivesScreen> {
                                 child: Column(
                                   children: [
                                     Image.network(
-                                      "https://api.syria-live.fun/img_proxy?url=" + match["away_logo"],
+                                      "https://api.alkhbeerapp.com/img_proxy?url=" + match["away_logo"],
                                       width: 50,
                                       height: 50,
                                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),

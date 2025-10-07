@@ -10,16 +10,13 @@ import 'package:yallashoot/settings_provider.dart';
 class ApiData {
   late Map<String, String> headers;
 
-  // Constructor
   ApiData() {
     _updateHeaders();
     locator<SettingsProvider>().addListener(_updateHeaders);
   }
 
-  // ============== Constants for Ostora API ==============
   static const _aesKeyHex = "4e5c6d1a8b3fe8137a3b9df26a9c4de195267b8e6f6c0b4e1c3ae1d27f2b4e6f";
   static const _ivHex = "a9c21f8d7e6b4a9db12e4f9d5c1a7b8e";
-  // ======================================================
 
   void _updateHeaders() {
     final settings = locator<SettingsProvider>();
@@ -81,11 +78,7 @@ class ApiData {
     }
   }
 
-  // =================================================================
-  // ==== الدوال المساعدة التي تم نقلها من كود Kotlin إلى Dart ====
-  // =================================================================
 
-  /// دالة لتوليد نص عشوائي بنفس طريقة كود Kotlin
   String _generateRandomString({int length = 10}) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();
@@ -93,7 +86,6 @@ class ApiData {
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
   }
 
-  /// دالة لفك تشفير الاستجابة المشفرة
   String _decodeResponse(String ciphertext) {
     // تحويل المفتاح والـ IV من صيغة Hex إلى Bytes
     final keyBytes = _hexToBytes(_aesKeyHex);
@@ -128,7 +120,6 @@ class ApiData {
     return utf8.decode(unpaddedBytes);
   }
 
-  /// دالة مساعدة لتحويل نص Hex إلى قائمة من الـ Bytes
   Uint8List _hexToBytes(String hex) {
     hex = hex.replaceAll(" ", ""); // إزالة أي مسافات
     final result = Uint8List(hex.length ~/ 2);
@@ -139,10 +130,6 @@ class ApiData {
     return result;
   }
 
-  // =================================================================
-  // ==== باقي الدوال تبقى كما هي بدون أي تغيير ====
-  // =================================================================
-
   Future<Map<String, dynamic>> getCategory(String id) async {
     return await fetchOData("category/$id");
   }
@@ -151,9 +138,6 @@ class ApiData {
     return await fetchData("matches");
   }
 
-  // ... (باقي الدوال من الكود الأصلي) ...
-  // ... (All other functions from your original code) ...
-  // --- Just copy and paste the rest of your functions from here down ---
   Future<Map<String, dynamic>> checkUpdate(int v) async {
     return await fetchUpdateData("app/check_update?v=$v");
   }
@@ -229,8 +213,15 @@ class ApiData {
     final response = await http.get(Uri.parse(url), headers: headers);
     return jsonDecode(response.body);
   }
+
   Future<dynamic> getAds() async {
-    final baseUrl = "https://api.syria-live.fun/api/v2/ads";
+    final baseUrl = "https://api.syria-live.fun/api/v2/app_ads";
+    final response = await http.get(Uri.parse(baseUrl));
+    return jsonDecode(response.body);
+  }
+
+  Future<dynamic> getState() async {
+    final baseUrl = "https://api.syria-live.fun/app.json";
     final response = await http.get(Uri.parse(baseUrl));
     return jsonDecode(response.body);
   }

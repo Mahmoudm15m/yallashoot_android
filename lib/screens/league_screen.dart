@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:yallashoot/screens/player_screen.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import '../widgets/html_viewer_widget.dart';
 
 
 class _TabInfo {
@@ -25,12 +28,31 @@ class _LeagueScreenState extends State<LeagueScreen> {
   late final ApiData api ;
   bool _isLoading = true;
   List<_TabInfo> _tabs = [];
+  String? _bottomAdHtmlContent;
+  bool _isBottomAdVisible = false;
 
   @override
   void initState() {
     super.initState();
     api = ApiData();
     _loadAllData();
+    _fetchAndDecodeAds();
+  }
+
+  Future<void> _fetchAndDecodeAds() async {
+    try {
+      final response = await api.getAds();
+      final encodedAd = response?['app_ads']?['banner_top_table'] as String?;
+
+      if (mounted && encodedAd != null && encodedAd.isNotEmpty) {
+        setState(() {
+          _bottomAdHtmlContent = utf8.decode(base64.decode(encodedAd));
+          _isBottomAdVisible = true;
+        });
+      }
+    } catch (e) {
+      print("Failed to fetch or decode ad: $e");
+    }
   }
 
   Future<void> _loadAllData() async {
@@ -438,8 +460,22 @@ class _LeagueScreenState extends State<LeagueScreen> {
             tabs: _tabs.map((t) => t.tab).toList(),
           ),
         ),
-        body: TabBarView(
-          children: _tabs.map((t) => t.content).toList(),
+        body: Column(
+          children: [
+            if (_isBottomAdVisible && _bottomAdHtmlContent != null)
+              SizedBox(
+                height: 100,
+                child: ResponsiveHtmlWidget(
+                  htmlContent: _bottomAdHtmlContent!,
+                ),
+              ),
+            Expanded(
+              child: TabBarView(
+                children: _tabs.map((t) => t.content).toList(),
+              ),
+            ),
+
+          ],
         ),
       ),
     );

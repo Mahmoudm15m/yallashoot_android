@@ -10,9 +10,10 @@ import '../api/main_api.dart';
 import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart' hide ClockTicker;
 import '../strings/languages.dart';
+import '../widgets/html_viewer_widget.dart';
 import 'category_screen.dart';
 import 'lives_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<dynamic> _future;
   late DateTime _selectedDate;
   bool _showLiveOnly = false;
+  bool _showAppBarBottom = false;
+  String? _bottomAdHtmlContent;
+  bool _isBottomAdVisible = false;
 
   List<String> _priorityChamps = [];
   late final ApiData yasScore;
@@ -36,7 +40,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _selectedDate = DateTime.now();
     _loadPriorityChamps();
+    _checkState();
     _fetchMatches();
+    _fetchAndDecodeAds();
+  }
+
+  Future<void> _fetchAndDecodeAds() async {
+    try {
+      final response = await yasScore.getAds();
+      final encodedAd = response?['app_ads']?['banner_bottom_screen'] as String?;
+
+      if (mounted && encodedAd != null && encodedAd.isNotEmpty) {
+        setState(() {
+          _bottomAdHtmlContent = utf8.decode(base64.decode(encodedAd));
+          _isBottomAdVisible = true;
+        });
+      }
+    } catch (e) {
+      print("Failed to fetch or decode ad: $e");
+    }
+  }
+
+  Future<void> _checkState() async {
+    try {
+      final response = await yasScore.getState();
+      if (mounted && response['ok'] == true) {
+        setState(() {
+          _showAppBarBottom = true;
+        });
+      }
+    } catch (e) {
+      print("Failed to get state: $e");
+    }
   }
 
   Future<void> _loadPriorityChamps() async {
@@ -129,13 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int _getMatchSortPriority(String? status) {
-    // Live matches (including half-time) are highest priority
     if (status == '1' || status == '3' || status == '2') return 0;
-    // Upcoming matches are next
     if (status == '0') return 1;
-    // Finished matches are lowest priority
     if (status == '4' || status == '11') return 2;
-    // Any other status (postponed, cancelled, etc.)
     return 3;
   }
 
@@ -215,54 +246,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
 
-        // bottom: PreferredSize(
-        //   preferredSize: const Size.fromHeight(50.0),
-        //   child: Padding(
-        //     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        //     child: Row(
-        //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //       children: [
-        //         TextButton.icon(
-        //           onPressed: () {
-        //             Navigator.push(context, MaterialPageRoute(builder: (context) {
-        //               return CategoryScreen();
-        //             }));
-        //           },
-        //           icon: Icon(
-        //             Icons.satellite_alt_rounded,
-        //             size: 20,
-        //             color: Colors.redAccent,
-        //           ),
-        //           label: Text(
-        //             appStrings[currentLocale.languageCode]!["channels"]!,
-        //             style: TextStyle(
-        //               fontSize: 16,
-        //               color: Colors.redAccent,
-        //               fontWeight: FontWeight.w600,
-        //             ),
-        //           ),
-        //           style: TextButton.styleFrom(
-        //             shape: RoundedRectangleBorder(
-        //               borderRadius: BorderRadius.circular(20.0),
-        //             ),
-        //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        //           ),
-        //         ),
-        //         TextButton(
-        //             onPressed: (){
-        //               Navigator.push(context, MaterialPageRoute(builder: (context){
-        //                 return LivesScreen(lang: currentLocale.languageCode,);
-        //               }));
-        //             },
-        //             child: Text(
-        //               appStrings[currentLocale.languageCode]!["live_button"]!,
-        //               style: const TextStyle(fontSize: 16, color: Colors.blueAccent),
-        //             )
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // ),
+        bottom: _showAppBarBottom
+            ? PreferredSize(
+          preferredSize: const Size.fromHeight(50.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      return CategoryScreen();
+                    }));
+                  },
+                  icon: Icon(
+                    Icons.satellite_alt_rounded,
+                    size: 20,
+                    color: Colors.redAccent,
+                  ),
+                  label: Text(
+                    appStrings[currentLocale.languageCode]!["channels"]!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                TextButton(
+                    onPressed: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return LivesScreen(lang: currentLocale.languageCode,);
+                      }));
+                    },
+                    child: Text(
+                      appStrings[currentLocale.languageCode]!["live_button"]!,
+                      style: const TextStyle(fontSize: 16, color: Colors.blueAccent),
+                    )
+                ),
+              ],
+            ),
+          ),
+        )
+            : null,
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -412,7 +445,18 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
           );
-          return content;
+          return Column(
+            children: [
+              Expanded(child: content),
+              if (_isBottomAdVisible && _bottomAdHtmlContent != null)
+                SizedBox(
+                  height: 100,
+                  child: ResponsiveHtmlWidget(
+                    htmlContent: _bottomAdHtmlContent!,
+                  ),
+                ),
+            ],
+          );
         },
       ),
     );
@@ -649,9 +693,10 @@ class _MatchCardState extends State<_MatchCard>
   Widget _cardBody(BuildContext context, DateTime now) {
     final Locale currentLocale = Localizations.localeOf(context);
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
             builder: (_) => MatchDetails(
               id: widget.match['match_id'].toString(),
               leagueId: widget.match['championship']['url_id'].toString(),
@@ -659,8 +704,10 @@ class _MatchCardState extends State<_MatchCard>
                   "/" +
                   widget.match["away_team"]["row_id"].toString(),
               lang: currentLocale.languageCode,
-            )),
-      ),
+            ),
+          ),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

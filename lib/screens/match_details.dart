@@ -1,6 +1,7 @@
 
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:yallashoot/widgets/videos_tap.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import '../widgets/html_viewer_widget.dart';
 import '../widgets/lineup_tap.dart';
 import '../widgets/news_tap.dart';
 import 'package:yallashoot/widgets/standing_tap.dart';
@@ -61,6 +63,8 @@ class _MatchDetailsState extends State<MatchDetails> {
   late Future<Map<String, dynamic>> futureResults;
   late ApiData apiData;
   bool _showKeyEventsOnly = true;
+  String? _bottomAdHtmlContent;
+  bool _isBottomAdVisible = false;
 
   final ClockTicker _clock = ClockTicker();
 
@@ -69,6 +73,23 @@ class _MatchDetailsState extends State<MatchDetails> {
     super.initState();
     apiData = ApiData();
     futureResults = fetchInfo();
+    _fetchAndDecodeAds();
+  }
+
+  Future<void> _fetchAndDecodeAds() async {
+    try {
+      final response = await apiData.getAds();
+      final encodedAd = response?['app_ads']?['banner_bottom_match'] as String?;
+
+      if (mounted && encodedAd != null && encodedAd.isNotEmpty) {
+        setState(() {
+          _bottomAdHtmlContent = utf8.decode(base64.decode(encodedAd));
+          _isBottomAdVisible = true;
+        });
+      }
+    } catch (e) {
+      print("Failed to fetch or decode ad: $e");
+    }
   }
 
   Future<Map<String, dynamic>> fetchInfo() async {
@@ -89,86 +110,99 @@ class _MatchDetailsState extends State<MatchDetails> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: futureResults,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildShimmerLayout(context);
-          } else if (snapshot.hasError) {
-            return Center(
-                child: Text(
-                    '${appStrings[Localizations.localeOf(context).languageCode]!["error"]!} : ${snapshot.error}'));
-          } else if (!snapshot.hasData) {
-            return Center(
-                child: Text(
-                    appStrings[Localizations.localeOf(context).languageCode]![
-                    "no_data"]!));
-          } else {
-            final detailsData = snapshot.data!["details"]?["details"]?["data"];
-            final eventsData = snapshot.data!["events"]?["events"]?["data"];
+      body: Column(
+        children: [
+          Expanded(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: futureResults,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildShimmerLayout(context);
+                } else if (snapshot.hasError) {
+                  return Center(
+                      child: Text(
+                          '${appStrings[Localizations.localeOf(context).languageCode]!["error"]!} : ${snapshot.error}'));
+                } else if (!snapshot.hasData) {
+                  return Center(
+                      child: Text(
+                          appStrings[Localizations.localeOf(context).languageCode]![
+                          "no_data"]!));
+                } else {
+                  final detailsData = snapshot.data!["details"]?["details"]?["data"];
+                  final eventsData = snapshot.data!["events"]?["events"]?["data"];
 
-            if (detailsData == null) {
-              return Center(
-                  child: Text(
-                      appStrings[Localizations.localeOf(context).languageCode]![
-                      "no_data"]!));
-            }
+                  if (detailsData == null) {
+                    return Center(
+                        child: Text(
+                            appStrings[Localizations.localeOf(context).languageCode]![
+                            "no_data"]!));
+                  }
 
-            final tabs = _buildTabs(detailsData, eventsData);
+                  final tabs = _buildTabs(detailsData, eventsData);
 
-            return DefaultTabController(
-              length: tabs.length,
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    SliverAppBar(
-                      expandedHeight: 240.0,
-                      floating: false,
-                      pinned: true,
-                      backgroundColor: theme.primaryColor,
-                      elevation: 0,
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: _buildHeader(detailsData),
-                        titlePadding: EdgeInsets.zero,
-                        centerTitle: true,
-                        title: const SizedBox.shrink(),
-                      ),
-                      bottom: TabBar(
-                        tabs: tabs.map((t) => t.tab).toList(),
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.start,
-                        labelColor: Colors.blueGrey,
-                        unselectedLabelColor: Colors.white,
-                        labelStyle: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
-                        unselectedLabelStyle: const TextStyle(
-                            fontWeight: FontWeight.normal, fontSize: 14),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicator: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: colorScheme.onPrimary.withOpacity(0.15),
+                  return DefaultTabController(
+                    length: tabs.length,
+                    child: NestedScrollView(
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverAppBar(
+                            expandedHeight: 240.0,
+                            floating: false,
+                            pinned: true,
+                            backgroundColor: theme.primaryColor,
+                            elevation: 0,
+                            flexibleSpace: FlexibleSpaceBar(
+                              background: _buildHeader(detailsData),
+                              titlePadding: EdgeInsets.zero,
+                              centerTitle: true,
+                              title: const SizedBox.shrink(),
+                            ),
+                            bottom: TabBar(
+                              tabs: tabs.map((t) => t.tab).toList(),
+                              isScrollable: true,
+                              tabAlignment: TabAlignment.start,
+                              labelColor: Colors.blueGrey,
+                              unselectedLabelColor: Colors.white,
+                              labelStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 14),
+                              unselectedLabelStyle: const TextStyle(
+                                  fontWeight: FontWeight.normal, fontSize: 14),
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              indicator: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                color: colorScheme.onPrimary.withOpacity(0.15),
+                              ),
+                              indicatorPadding:
+                              const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                            ),
+                          ),
+                        ];
+                      },
+                      body: tabs.isEmpty
+                          ? Center(
+                          child: Text(appStrings[
+                          Localizations.localeOf(context).languageCode]![
+                          "no_data"]!))
+                          : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TabBarView(
+                          children: tabs.map((t) => t.view).toList(),
                         ),
-                        indicatorPadding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                       ),
                     ),
-                  ];
-                },
-                body: tabs.isEmpty
-                    ? Center(
-                    child: Text(appStrings[
-                    Localizations.localeOf(context).languageCode]![
-                    "no_data"]!))
-                    : Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TabBarView(
-                    children: tabs.map((t) => t.view).toList(),
-                  ),
-                ),
+                  );
+                }
+              },
+            ),
+          ),
+          if (_isBottomAdVisible && _bottomAdHtmlContent != null)
+            SizedBox(
+              height: 100,
+              child: ResponsiveHtmlWidget(
+                htmlContent: _bottomAdHtmlContent!,
               ),
-            );
-          }
-        },
+            ),
+        ],
       ),
     );
   }
