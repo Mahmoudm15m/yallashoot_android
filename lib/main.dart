@@ -51,6 +51,19 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+
+      // ---  الحل باستخدام Builder ---
+      // هذه الطريقة تعمل على كل إصدارات فلاتر
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            // ignore: deprecated_member_use
+            textScaleFactor: settingsProvider.fontScaleFactor,
+          ),
+          child: child!,
+        );
+      },
+
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: Colors.teal[800],
@@ -99,7 +112,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> fetchUpdates() async {
-    const int currentVersion = 15;
+    const int currentVersion = 16;
     try {
       final data = await locator<ApiData>().checkUpdate(currentVersion);
       if (data['ok'] == true && data['version'] > currentVersion) {
@@ -124,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 actions: [
                   IconButton(
-                  onPressed: () async {
+                    onPressed: () async {
                       final url = data['link'] as String?;
                       if (url != null) {
                         await launchUrl(

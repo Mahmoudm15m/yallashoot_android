@@ -523,7 +523,7 @@ class _ChampSectionState extends State<_ChampSection> {
                 child: Row(
                   children: [
                     Image.network(
-                      "https://api.alkhbeerapp.com/img_proxy?url=https://imgs.ysscores.com/championship/64/${widget.champ['image']}",
+                      "https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/championship/64/${widget.champ['image']}",
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                     const SizedBox(width: 8),
@@ -873,7 +873,7 @@ class _TeamSide extends StatelessWidget {
     return Column(
       children: [
         Image.network(
-          "https://api.alkhbeerapp.com/img_proxy?url=https://imgs.ysscores.com/teams/64/${team['image']}",
+          "https://api.syria-live.fun/img_proxy?url=https://imgs.ysscores.com/teams/64/${team['image']}",
           width: 37,
           height: 37,
           errorBuilder: (_, __, ___) => const SizedBox(width: 37, height: 37),

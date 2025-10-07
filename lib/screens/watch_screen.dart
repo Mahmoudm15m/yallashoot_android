@@ -85,7 +85,7 @@ class _WatchScreenState extends State<WatchScreen> {
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: const Text(
-          "syrialive.app",
+          "syrialive",
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,

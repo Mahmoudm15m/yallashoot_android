@@ -108,6 +108,7 @@ const Map<String, Map<String, String>> appStrings = {
     "penalty_scored": "Penalty scored",
     "goal_cancelled": "Goal cancelled",
     "hit_woodwork": "Hit the woodwork",
+    "text_size" : "Text Size",
 
     'no_data': 'No Data',
     'error_occurred': 'An error occurred',
@@ -163,7 +164,7 @@ const Map<String, Map<String, String>> appStrings = {
     'arabic': 'العربية',
     'timezone': 'فارق التوقيت',
     'options': 'الخيارات',
-
+    "text_size" : "حجم الخط",
 
     'today_matches': 'مباريات اليوم',
     'matches': 'المباريات',

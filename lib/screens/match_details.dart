@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
@@ -918,22 +916,43 @@ class _MatchDetailsState extends State<MatchDetails> {
     );
   }
 
+  // --- التعديل هنا ---
   Widget _buildRecentMatchesTab(Map<String, dynamic> playedResult) {
     final homeMatches = (playedResult['home'] as Map?)?.values.toList() ?? [];
     final awayMatches = (playedResult['away'] as Map?)?.values.toList() ?? [];
+
+    // التحقق من أن القوائم ليست فارغة قبل بناء الواجهة
+    if (homeMatches.isEmpty && awayMatches.isEmpty) {
+      return Center(
+        child: Text(
+            appStrings[Localizations.localeOf(context).languageCode]!["no_data"]!),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          // عرض بيانات الفريق الأول فقط إذا كانت القائمة غير فارغة
+          if (homeMatches.isNotEmpty)
+            Expanded(
               child: _buildTeamRecentMatches(
-                  homeMatches.first['home']?['title'], homeMatches)),
-          const SizedBox(width: 16),
-          Expanded(
+                homeMatches.first['home']?['title'],
+                homeMatches,
+              ),
+            ),
+          // إضافة فاصل فقط إذا كان كلا الفريقين لديهما بيانات
+          if (homeMatches.isNotEmpty && awayMatches.isNotEmpty)
+            const SizedBox(width: 16),
+          // عرض بيانات الفريق الثاني فقط إذا كانت القائمة غير فارغة
+          if (awayMatches.isNotEmpty)
+            Expanded(
               child: _buildTeamRecentMatches(
-                  awayMatches.first['away']?['title'], awayMatches)),
+                awayMatches.first['away']?['title'],
+                awayMatches,
+              ),
+            ),
         ],
       ),
     );

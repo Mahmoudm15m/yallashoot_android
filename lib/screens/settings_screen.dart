@@ -34,7 +34,6 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         children: [
-
           Card(
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -53,7 +52,6 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
 
           Card(
             clipBehavior: Clip.antiAlias,
@@ -116,6 +114,38 @@ class SettingsScreen extends StatelessWidget {
                         }
                       },
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+
+          Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.format_size, color: theme.colorScheme.primary),
+                      const SizedBox(width: 16),
+                      Text(strings['text_size']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  Slider(
+                    value: settings.fontScaleFactor,
+                    min: 0.5,
+                    max: 1.5,
+                    divisions: 10,
+                    label: settings.fontScaleFactor.toStringAsFixed(1),
+                    onChanged: (value) {
+                      context.read<SettingsProvider>().updateFontScaleFactor(value);
+                    },
                   ),
                 ],
               ),

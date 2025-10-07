@@ -160,7 +160,7 @@ class _LivesScreenState extends State<LivesScreen> {
                                 child: Column(
                                   children: [
                                     Image.network(
-                                      "https://api.alkhbeerapp.com/img_proxy?url=" + match["home_logo"],
+                                      "https://api.syria-live.fun/img_proxy?url=" + match["home_logo"],
                                       width: 50,
                                       height: 50,
                                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),
@@ -188,7 +188,7 @@ class _LivesScreenState extends State<LivesScreen> {
                                 child: Column(
                                   children: [
                                     Image.network(
-                                      "https://api.alkhbeerapp.com/img_proxy?url=" + match["away_logo"],
+                                      "https://api.syria-live.fun/img_proxy?url=" + match["away_logo"],
                                       width: 50,
                                       height: 50,
                                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, size: 50),
