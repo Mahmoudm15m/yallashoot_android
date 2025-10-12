@@ -4,7 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/screens/watch_screen.dart';
 import '../api/main_api.dart';
 import '../main.dart';
-import '../widgets/admob_helper.dart';
+import '../widgets/ad_manager.dart';
 import '../widgets/html_viewer_widget.dart';
 
 Widget buildLoadingScreen(BuildContext context) {
@@ -75,7 +75,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
     super.initState();
     _reloadData();
     // _fetchAds();
-    AdHelper.preloadInterstitialAd();
+    AdManager.initializeAds(context);
   }
 
   Future<void> _fetchAds() async {
@@ -101,14 +101,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   }
 
   Future<void> _onChannelTap(Map<String, dynamic> channel) async {
-    AdHelper.showAdThenNavigate(context, () {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => WatchScreen(
-          url: channel["source"],
-          userAgent: channel["agent"],
-        )),
-      );
-    });
+    await AdManager.showInterstitialAd(context);
+    Navigator.push(context,
+      MaterialPageRoute(builder: (context) => WatchScreen(
+        url: channel["source"],
+        userAgent: channel["agent"],
+      )),
+    );
 
   }
 

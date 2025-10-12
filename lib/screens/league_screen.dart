@@ -6,7 +6,7 @@ import 'package:yallashoot/screens/player_screen.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-import '../widgets/admob_bunner.dart';
+// import '../widgets/admob_bunner.dart';
 import '../widgets/html_viewer_widget.dart';
 
 
@@ -470,7 +470,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
             //       htmlContent: _bottomAdHtmlContent!,
             //     ),
             //   ),
-            const BannerAdWidget(),
+            // const BannerAdWidget(),
             Expanded(
               child: TabBarView(
                 children: _tabs.map((t) => t.content).toList(),

@@ -10,7 +10,7 @@ import '../api/main_api.dart';
 import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart' hide ClockTicker;
 import '../strings/languages.dart';
-import '../widgets/admob_bunner.dart';
+// import '../widgets/admob_bunner.dart';
 import '../widgets/html_viewer_widget.dart';
 import 'category_screen.dart';
 import 'lives_screen.dart';
@@ -456,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> {
               //       htmlContent: _bottomAdHtmlContent!,
               //     ),
               //   ),
-              const BannerAdWidget(),
+              // const BannerAdWidget(),
             ],
           );
         },

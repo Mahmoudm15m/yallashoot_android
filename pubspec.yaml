@@ -50,7 +50,8 @@ dependencies:
   provider: ^6.1.5
   get_it: ^8.0.3
   tutorial_coach_mark: ^1.2.9
-  google_mobile_ads: ^6.0.0
+#  google_mobile_ads: ^6.0.0
+  unity_ads_plugin:
 
 
 dev_dependencies:

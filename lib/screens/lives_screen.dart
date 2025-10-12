@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-import '../widgets/admob_helper.dart';
+import '../widgets/ad_manager.dart';
+// import '../widgets/admob_helper.dart';
 import '../widgets/html_viewer_widget.dart';
 
 
@@ -29,7 +30,7 @@ class _LivesScreenState extends State<LivesScreen> {
     apiData = ApiData();
     futureResults = fetchLives();
     // _fetchAds();
-    AdHelper.preloadInterstitialAd();
+    AdManager.initializeAds(context);
   }
 
   Future<void> _fetchAds() async {
@@ -64,10 +65,8 @@ class _LivesScreenState extends State<LivesScreen> {
   }
 
   Future<void> _onMatchTap(Map<String, dynamic> match) async {
-
-    AdHelper.showAdThenNavigate(context, () {
-      _navigateToStream(match);
-    });
+    await AdManager.showInterstitialAd(context);
+    _navigateToStream(match);
   }
 
   void _navigateToStream(Map<String, dynamic> match){

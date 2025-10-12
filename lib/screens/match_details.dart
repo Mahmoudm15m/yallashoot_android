@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:yallashoot/widgets/videos_tap.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-import '../widgets/admob_bunner.dart';
+// import '../widgets/admob_bunner.dart';
 import '../widgets/html_viewer_widget.dart';
 import '../widgets/lineup_tap.dart';
 import '../widgets/news_tap.dart';
@@ -201,7 +201,7 @@ class _MatchDetailsState extends State<MatchDetails> {
           //       htmlContent: _bottomAdHtmlContent!,
           //     ),
           //   ),
-          const BannerAdWidget(),
+          // const BannerAdWidget(),
         ],
       ),
     );
