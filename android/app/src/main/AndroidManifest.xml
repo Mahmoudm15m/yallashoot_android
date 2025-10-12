@@ -15,9 +15,8 @@
         <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-9181001319721306~5177004120" />
+            android:value="ca-app-pub-2506270690918503~2620859365" />
 
-        <!-- تعريف AdActivity -->
         <activity
             android:name="com.google.android.gms.ads.AdActivity"
             android:exported="false"
@@ -46,7 +45,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Activity الخاصة بـ Unity Ads (لو مستخدمين Unity) -->
         <activity
             android:name="com.unity3d.ads.adunit.AdUnitActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
@@ -59,7 +57,6 @@
 
     </application>
 
-    <!-- Queries الخاصة بالـ Intent -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

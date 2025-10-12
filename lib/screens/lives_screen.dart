@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:yallashoot/screens/m3u8_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
-import '../widgets/html_viewer_widget.dart'; // تم إضافة المسار الخاص بويدجت الإعلان
+import '../widgets/admob_helper.dart';
+import '../widgets/html_viewer_widget.dart';
 
 
 class LivesScreen extends StatefulWidget {
@@ -20,17 +21,17 @@ class LivesScreen extends StatefulWidget {
 class _LivesScreenState extends State<LivesScreen> {
   late Future<Map<String, dynamic>> futureResults;
   late ApiData apiData;
-  Map<String, dynamic>? adsData; // متغير جديد لتخزين بيانات الإعلانات
+  Map<String, dynamic>? adsData;
 
   @override
   void initState() {
     super.initState();
     apiData = ApiData();
     futureResults = fetchLives();
-    _fetchAds(); // استدعاء دالة جلب الإعلانات
+    // _fetchAds();
+    AdHelper.preloadInterstitialAd();
   }
 
-  // دالة جديدة لجلب الإعلانات مرة واحدة عند فتح الشاشة
   Future<void> _fetchAds() async {
     try {
       final ads = await apiData.getAds();
@@ -62,36 +63,11 @@ class _LivesScreenState extends State<LivesScreen> {
     }
   }
 
-  // تم تعديل هذه الدالة بالكامل لتشمل منطق عرض الإعلان
   Future<void> _onMatchTap(Map<String, dynamic> match) async {
-    // 1. احصل على كود الإعلان المشفر من البيانات التي تم جلبها
-    final encodedAd = adsData?['app_ads']?['video_on_stream_enter'] as String?;
 
-    // 2. قم بفك تشفيره
-    final adHtmlContent = decodeBase64Ad(encodedAd);
-
-    // 3. تحقق إذا كان هناك محتوى إعلاني صالح
-    if (adHtmlContent != null) {
-      // إذا كان هناك إعلان، قم بعرضه في شاشة كاملة
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => FullScreenHtmlAdWidget(
-            htmlContent: adHtmlContent,
-            onAdClosed: () {
-              // عند إغلاق الإعلان، أغلق شاشة الإعلان
-              Navigator.pop(context);
-              // ثم انتقل إلى شاشة البث
-              _navigateToStream(match);
-            },
-          ),
-        ),
-      );
-    } else {
-      // إذا لم يكن هناك إعلان، انتقل مباشرة إلى شاشة البث
+    AdHelper.showAdThenNavigate(context, () {
       _navigateToStream(match);
-    }
+    });
   }
 
   void _navigateToStream(Map<String, dynamic> match){

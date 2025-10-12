@@ -6,6 +6,7 @@ import 'package:yallashoot/screens/player_screen.dart';
 import 'package:yallashoot/screens/team_screen.dart';
 import '../api/main_api.dart';
 import '../strings/languages.dart';
+import '../widgets/admob_bunner.dart';
 import '../widgets/html_viewer_widget.dart';
 
 
@@ -36,7 +37,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     super.initState();
     api = ApiData();
     _loadAllData();
-    _fetchAndDecodeAds();
+    // _fetchAndDecodeAds();
   }
 
   Future<void> _fetchAndDecodeAds() async {
@@ -462,13 +463,14 @@ class _LeagueScreenState extends State<LeagueScreen> {
         ),
         body: Column(
           children: [
-            if (_isBottomAdVisible && _bottomAdHtmlContent != null)
-              SizedBox(
-                height: 100,
-                child: ResponsiveHtmlWidget(
-                  htmlContent: _bottomAdHtmlContent!,
-                ),
-              ),
+            // if (_isBottomAdVisible && _bottomAdHtmlContent != null)
+            //   SizedBox(
+            //     height: 100,
+            //     child: ResponsiveHtmlWidget(
+            //       htmlContent: _bottomAdHtmlContent!,
+            //     ),
+            //   ),
+            const BannerAdWidget(),
             Expanded(
               child: TabBarView(
                 children: _tabs.map((t) => t.content).toList(),

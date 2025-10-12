@@ -10,6 +10,7 @@ import '../api/main_api.dart';
 import '../functions/clock_ticker.dart';
 import '../screens/match_details.dart' hide ClockTicker;
 import '../strings/languages.dart';
+import '../widgets/admob_bunner.dart';
 import '../widgets/html_viewer_widget.dart';
 import 'category_screen.dart';
 import 'lives_screen.dart';
@@ -42,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadPriorityChamps();
     _checkState();
     _fetchMatches();
-    _fetchAndDecodeAds();
+    // _fetchAndDecodeAds();
   }
 
   Future<void> _fetchAndDecodeAds() async {
@@ -448,13 +449,14 @@ class _HomeScreenState extends State<HomeScreen> {
           return Column(
             children: [
               Expanded(child: content),
-              if (_isBottomAdVisible && _bottomAdHtmlContent != null)
-                SizedBox(
-                  height: 100,
-                  child: ResponsiveHtmlWidget(
-                    htmlContent: _bottomAdHtmlContent!,
-                  ),
-                ),
+              // if (_isBottomAdVisible && _bottomAdHtmlContent != null)
+              //   SizedBox(
+              //     height: 100,
+              //     child: ResponsiveHtmlWidget(
+              //       htmlContent: _bottomAdHtmlContent!,
+              //     ),
+              //   ),
+              const BannerAdWidget(),
             ],
           );
         },

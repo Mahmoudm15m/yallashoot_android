@@ -4,6 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:yallashoot/screens/watch_screen.dart';
 import '../api/main_api.dart';
 import '../main.dart';
+import '../widgets/admob_helper.dart';
 import '../widgets/html_viewer_widget.dart';
 
 Widget buildLoadingScreen(BuildContext context) {
@@ -73,7 +74,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   void initState() {
     super.initState();
     _reloadData();
-    _fetchAds();
+    // _fetchAds();
+    AdHelper.preloadInterstitialAd();
   }
 
   Future<void> _fetchAds() async {
@@ -99,38 +101,18 @@ class _ChannelsScreenState extends State<ChannelsScreen> with RouteAware {
   }
 
   Future<void> _onChannelTap(Map<String, dynamic> channel) async {
-    final encodedAd = adsData?['app_ads']?['video_on_channel_open'] as String?;
-    final adHtmlContent = decodeBase64Ad(encodedAd);
-
-    if (adHtmlContent != null) {
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => FullScreenHtmlAdWidget(
-            htmlContent: adHtmlContent,
-            onAdClosed: () {
-              Navigator.pop(context);
-              _navigateToWatchScreen(channel);
-            },
-          ),
-        ),
+    AdHelper.showAdThenNavigate(context, () {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => WatchScreen(
+          url: channel["source"],
+          userAgent: channel["agent"],
+        )),
       );
-    } else {
-      _navigateToWatchScreen(channel);
-    }
+    });
+
   }
 
-  void _navigateToWatchScreen(Map<String, dynamic> channel) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return WatchScreen(
-        url: channel["source"],
-        userAgent: channel["agent"],
-      );
-    }));
-  }
 
-  // --- باقي الدوال تبقى كما هي ---
   Future<Map<String, dynamic>> fetchHomeData() async {
     try {
       final data = await apiService.getCategory(widget.id);

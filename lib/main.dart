@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yallashoot/locator.dart';
 import 'package:yallashoot/screens/home_screen.dart';
@@ -15,9 +18,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 Future<void> main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
-
+  MobileAds.instance.initialize();
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
   setupLocator(settingsProvider);
@@ -29,7 +31,6 @@ Future<void> main() async {
     ),
   );
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -51,9 +52,6 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-
-      // ---  الحل باستخدام Builder ---
-      // هذه الطريقة تعمل على كل إصدارات فلاتر
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
@@ -63,7 +61,6 @@ class MyApp extends StatelessWidget {
           child: child!,
         );
       },
-
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: Colors.teal[800],
@@ -74,7 +71,8 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
         primaryColor: Colors.teal[800],
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal[800]!, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.teal[800]!, brightness: Brightness.dark),
       ),
       home: const MainScreen(),
     );
@@ -93,17 +91,90 @@ class _MainScreenState extends State<MainScreen> {
   Timer? _retryTimer;
   int width = 500;
 
-
-  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
+  final GlobalKey _settingsKey = GlobalKey();
+  late TutorialCoachMark tutorialCoachMark;
 
   @override
   void initState() {
     super.initState();
+    _createTutorial();
     fetchUpdates();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       width = MediaQuery.of(context).size.width.toInt();
+      _checkFirstLaunch();
     });
   }
+
+  Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+
+    if (isFirstLaunch) {
+      Future.delayed(const Duration(seconds: 1), () {
+        tutorialCoachMark.show(context: context);
+      });
+      await prefs.setBool('isFirstLaunch', false);
+    }
+  }
+
+  void _createTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: _createTargets(),
+      colorShadow: Colors.teal,
+      textSkip: "تخطي",
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {
+        print("finish");
+      },
+      onClickTarget: (target) {
+        print('onClickTarget: $target');
+      },
+      onClickOverlay: (target) {
+        print('onClickOverlay: $target');
+      },
+    );
+  }
+
+  List<TargetFocus> _createTargets() {
+    List<TargetFocus> targets = [];
+    targets.add(
+      TargetFocus(
+        identify: "settings-key",
+        keyTarget: _settingsKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  "أهلاً بك في سوريا لايف",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 20.0,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Text(
+                    "من هنا يمكنك تغيير حجم الخط ومظهر التطبيق واللغه ليناسبك.",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return targets;
+  }
+
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   void dispose() {
@@ -136,7 +207,7 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
                 actions: [
-                  IconButton(
+                  TextButton(
                     onPressed: () async {
                       final url = data['link'] as String?;
                       if (url != null) {
@@ -146,30 +217,7 @@ class _MainScreenState extends State<MainScreen> {
                         );
                       }
                     },
-                    icon: Container(
-                      decoration: BoxDecoration(
-                          color: Colors.blueGrey,
-                          borderRadius: BorderRadius.circular(20)),
-                      alignment: Alignment.center,
-                      child: TextButton(
-                        onPressed: () async {
-                          final url = data['link'] as String?;
-                          if (url != null) {
-                            await launchUrl(
-                              Uri.parse(url),
-                              mode: LaunchMode.externalApplication,
-                            );
-                          }
-                        },
-                        child: const Text(
-                          'تحديث الآن',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
+                    child: const Text('تحديث الآن'),
                   ),
                 ],
               ),
@@ -184,7 +232,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final currentLocale = Localizations.localeOf(context);
 
     final screens = <Widget>[
@@ -203,10 +250,19 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         items: [
-          BottomNavigationBarItem(icon: const Icon(Icons.home), label: appStrings[currentLocale.languageCode]?["today_matches"]),
-          BottomNavigationBarItem(icon: const Icon(Icons.leaderboard), label: appStrings[currentLocale.languageCode]?["ranks"]),
-          BottomNavigationBarItem(icon: const Icon(Icons.newspaper), label: appStrings[currentLocale.languageCode]?["news"]),
-          BottomNavigationBarItem(icon: const Icon(Icons.settings), label: appStrings[currentLocale.languageCode]?["settings"]),
+          BottomNavigationBarItem(
+              icon: const Icon(Icons.home),
+              label: appStrings[currentLocale.languageCode]?["today_matches"]),
+          BottomNavigationBarItem(
+              icon: const Icon(Icons.leaderboard),
+              label: appStrings[currentLocale.languageCode]?["ranks"]),
+          BottomNavigationBarItem(
+              icon: const Icon(Icons.newspaper),
+              label: appStrings[currentLocale.languageCode]?["news"]),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings, key: _settingsKey),
+            label: appStrings[currentLocale.languageCode]?["settings"],
+          ),
         ],
       ),
     );
